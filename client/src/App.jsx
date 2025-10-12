@@ -19,12 +19,34 @@ function App() {
     if (!capturedImage) return
 
     setIsGenerating(true)
-    // Mock generation for Milestone 1
-    setTimeout(() => {
-      setGeneratedImage(capturedImage) // Use captured image as placeholder
-      localStorage.setItem('generatedImage', capturedImage)
+
+    try {
+      const response = await fetch('http://localhost:3001/api/generate-headshot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: capturedImage,
+          style: selectedStyle
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setGeneratedImage(data.image)
+        localStorage.setItem('generatedImage', data.image)
+      } else {
+        console.error('Generation failed:', data.error)
+        alert('Failed to generate headshot. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error generating headshot:', error)
+      alert('Error connecting to server. Please make sure the backend is running.')
+    } finally {
       setIsGenerating(false)
-    }, 1500)
+    }
   }
 
   const handleRetake = () => {
@@ -53,6 +75,17 @@ function App() {
               alt="Captured"
               className="absolute inset-0 w-full h-full object-cover"
             />
+
+            {/* Loading Overlay */}
+            {isGenerating && (
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="text-center">
+                  <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-yellow-500 border-t-transparent mb-4"></div>
+                  <p className="text-xl font-semibold text-white">Generating your headshot...</p>
+                  <p className="text-sm text-gray-400 mt-2">This may take a few moments</p>
+                </div>
+              </div>
+            )}
 
             {/* Overlay with controls */}
             <div className="absolute bottom-8 left-0 right-0 px-4">
@@ -103,7 +136,7 @@ function App() {
                   disabled={isGenerating}
                   className="flex-1 px-6 py-4 bg-yellow-500 hover:bg-yellow-400 text-black rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isGenerating ? 'Generating...' : 'Generate Headshot'}
+                  {isGenerating ? 'Generating...' : generatedImage ? 'Generate Again' : 'Generate Headshot'}
                 </button>
               </div>
             </div>
