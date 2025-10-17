@@ -114,7 +114,7 @@ export default function ResultScreen({
         </div>
 
         {/* Bottom Spacer (for iPhone home indicator area) */}
-        <div className="h-[16px] w-full bg-background" />
+        <div className="h-[40px] w-full bg-background" />
       </div>
     </div>
   );
