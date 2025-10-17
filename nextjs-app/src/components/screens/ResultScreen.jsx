@@ -57,10 +57,9 @@ export default function ResultScreen({
   };
 
   return (
-    <div className="bg-background flex flex-col items-start justify-between h-full w-full">
+    <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px]">
       {/* Generated Image Preview */}
-      <div className="flex-1 flex flex-col gap-[10px] items-start overflow-hidden px-[12px] py-[8px] rounded-[48px] w-full">
-        <div className="flex-1 bg-camera-bg min-h-0 min-w-0 relative rounded-[32px] shadow-camera-view w-full overflow-hidden">
+      <div className="flex-1 bg-camera-bg min-h-0 relative rounded-[32px] shadow-camera-view overflow-hidden w-full">
           {/* Generated image */}
           {imageUrl ? (
             <img
@@ -76,7 +75,6 @@ export default function ResultScreen({
 
           {/* Inner shadow for depth */}
           <div className="absolute inset-0 pointer-events-none shadow-camera-inner" />
-        </div>
       </div>
 
       {/* Controls Section */}
