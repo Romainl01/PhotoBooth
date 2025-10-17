@@ -108,7 +108,7 @@ export default function Home() {
     setCapturedImage(imageData)
 
     // Generate image with API
-    await generateImage(imageData)
+    await generateImage(imageData, currentFilterIndex)
   }
 
   // Upload photo from files
@@ -117,15 +117,19 @@ export default function Home() {
     reader.onload = async (e) => {
       const imageData = e.target.result
       setCapturedImage(imageData)
-      await generateImage(imageData)
+      await generateImage(imageData, currentFilterIndex)
     }
     reader.readAsDataURL(file)
   }
 
   // Generate image via API
-  const generateImage = async (imageData) => {
+  const generateImage = async (imageData, filterIndex) => {
     // Show loading screen
     setCurrentScreen(SCREENS.LOADING)
+
+    const filterName = FILTERS[filterIndex]
+    const stylePrompt = `${filterName} Professional`
+    console.log('Generating with filter:', filterName, 'Full prompt:', stylePrompt)
 
     try {
       const response = await fetch('/api/generate-headshot', {
@@ -135,7 +139,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           image: imageData,
-          style: `${FILTERS[currentFilterIndex]} Professional`
+          style: stylePrompt
         })
       })
 
@@ -162,7 +166,7 @@ export default function Home() {
   // Retry API call
   const handleApiRetry = async () => {
     if (capturedImage) {
-      await generateImage(capturedImage)
+      await generateImage(capturedImage, currentFilterIndex)
     } else {
       setCurrentScreen(SCREENS.CAMERA)
     }
