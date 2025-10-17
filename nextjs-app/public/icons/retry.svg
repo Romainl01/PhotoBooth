@@ -1,0 +1,16 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Retry button">
+<circle id="Ellipse 2" cx="32" cy="32" r="32" fill="var(--fill-0, black)"/>
+<circle id="Ellipse 3" cx="32" cy="32" r="29.0909" fill="var(--fill-0, #232323)" stroke="url(#paint0_linear_666_110)" stroke-opacity="0.6" stroke-width="2"/>
+<g id="Frame">
+<path id="Vector" d="M23 32C23 33.78 23.5278 35.5201 24.5168 37.0001C25.5057 38.4802 26.9113 39.6337 28.5558 40.3149C30.2004 40.9961 32.01 41.1743 33.7558 40.8271C35.5016 40.4798 37.1053 39.6226 38.364 38.364C39.6226 37.1053 40.4798 35.5016 40.8271 33.7558C41.1743 32.01 40.9961 30.2004 40.3149 28.5558C39.6337 26.9113 38.4802 25.5057 37.0001 24.5168C35.5201 23.5278 33.78 23 32 23C29.484 23.0095 27.069 23.9912 25.26 25.74L23 28" stroke="var(--stroke-0, white)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_2" d="M23 23V28H28" stroke="var(--stroke-0, white)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_666_110" x1="32" y1="2.90909" x2="32" y2="61.0909" gradientUnits="userSpaceOnUse">
+<stop stop-color="#858484"/>
+<stop offset="1"/>
+</linearGradient>
+</defs>
+</svg>
