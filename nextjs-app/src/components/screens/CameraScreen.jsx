@@ -97,7 +97,7 @@ export default function CameraScreen({
             onClick={onCapture}
             ariaLabel="Capture photo"
           >
-            <CaptureIcon className="w-full h-full" />
+            <CaptureIcon className="w-full h-full" iconType="camera" />
           </IconButton>
 
           {/* Camera Switch Button (Right - Mobile only) */}

@@ -194,8 +194,9 @@ export default function Home() {
   // Render current screen
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-[402px] mx-auto h-screen">
-        {currentScreen === SCREENS.CAMERA && (
+      <div className="max-w-[402px] mx-auto h-screen relative">
+        {/* Show camera screen when loading (it stays visible under overlay) */}
+        {(currentScreen === SCREENS.CAMERA || currentScreen === SCREENS.LOADING) && (
           <CameraScreen
             currentFilter={FILTERS[currentFilterIndex]}
             onFilterChange={handleFilterChange}
@@ -205,10 +206,6 @@ export default function Home() {
             canvasRef={canvasRef}
             isMobile={isMobile}
           />
-        )}
-
-        {currentScreen === SCREENS.LOADING && (
-          <Loader message="Generating your photo..." />
         )}
 
         {currentScreen === SCREENS.RESULT && (
@@ -226,6 +223,11 @@ export default function Home() {
 
         {currentScreen === SCREENS.API_ERROR && (
           <GenericError onRetry={handleApiRetry} />
+        )}
+
+        {/* Loading overlay - appears over camera screen */}
+        {currentScreen === SCREENS.LOADING && (
+          <Loader message="Loading..." />
         )}
       </div>
     </div>

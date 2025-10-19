@@ -1,21 +1,27 @@
 /**
  * Loader Component
  *
- * Displays a loading spinner with optional message
- * Shown while waiting for API response
+ * Full-screen overlay with:
+ * - Semi-transparent dark background overlay
+ * - Skeumorphic loading icon with yellow animated spinner
+ * - Loading text below
+ * - Appears over the camera screen
  */
 
 'use client';
 
-export default function Loader({ message = 'Generating your photo...' }) {
+import LoadingIcon from '../icons/LoadingIcon';
+
+export default function Loader({ message = 'Loading...' }) {
   return (
-    <div className="bg-background flex flex-col items-center justify-center h-full w-full">
-      <div className="flex flex-col gap-8 items-center">
-        {/* Spinner */}
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 border-4 border-[#232323] rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-text-accent border-t-transparent rounded-full animate-spin"></div>
-        </div>
+    <div className="absolute inset-0 z-50 flex items-center justify-center">
+      {/* Full screen overlay */}
+      <div className="absolute inset-0 bg-black/50" />
+
+      {/* Loading content */}
+      <div className="relative flex flex-col gap-4 items-center">
+        {/* Skeumorphic loading icon */}
+        <LoadingIcon className="w-[88px] h-[88px]" />
 
         {/* Loading message */}
         <p className="font-mono font-medium text-body text-text-primary text-center">
