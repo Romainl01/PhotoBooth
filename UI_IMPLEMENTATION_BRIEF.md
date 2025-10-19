@@ -3,7 +3,7 @@
 - Loader X
 - Filter component X
 - Spacing X
-- Animations 
+- Animations X
 - Desktop UI 
 - About button 
 - Prompts

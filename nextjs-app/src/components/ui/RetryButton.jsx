@@ -15,7 +15,7 @@ export default function RetryButton({ onClick, children = 'Retry', className = '
       viewBox="0 0 334 56"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`cursor-pointer ${className}`}
+      className={`cursor-pointer transition-transform active:scale-[0.97] ${className}`}
       onClick={onClick}
       style={{ display: 'block' }}
     >

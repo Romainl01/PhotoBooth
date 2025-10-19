@@ -124,7 +124,7 @@ export default function Home() {
 
   // Generate image via API
   const generateImage = async (imageData, filterIndex) => {
-    // Show loading screen
+    // Show loading screen immediately
     setCurrentScreen(SCREENS.LOADING)
 
     const filterName = FILTERS[filterIndex]
