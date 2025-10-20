@@ -26,7 +26,6 @@ export default function CameraScreen({
   onUpload,
   videoRef,
   canvasRef,
-  isMobile = true,
 }) {
   const fileInputRef = useRef(null);
   const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
@@ -50,9 +49,9 @@ export default function CameraScreen({
   };
 
   return (
-    <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px]">
+    <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px] md:p-0 md:relative">
       {/* Camera Preview */}
-      <div className="flex-1 bg-camera-bg min-h-0 relative rounded-[32px] shadow-camera-view overflow-hidden w-full">
+      <div className="flex-1 bg-camera-bg min-h-0 relative rounded-[32px] shadow-camera-view overflow-hidden w-full md:absolute md:inset-0 md:rounded-none md:shadow-none">
           {/* Video element for camera feed */}
           <video
             ref={videoRef}
@@ -66,13 +65,13 @@ export default function CameraScreen({
           <canvas ref={canvasRef} className="hidden" />
 
           {/* Inner shadow for depth */}
-          <div className="absolute inset-0 pointer-events-none shadow-camera-inner" />
+          <div className="absolute inset-0 pointer-events-none shadow-camera-inner md:shadow-none" />
       </div>
 
-      {/* Controls Section */}
-      <div className="flex flex-col items-center w-full">
+      {/* Controls Section - Floating on desktop */}
+      <div className="flex flex-col items-center w-full md:absolute md:bottom-[16px] md:left-1/2 md:-translate-x-1/2 md:max-w-[400px] md:w-auto md:z-10 md:rounded-[16px] md:shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:overflow-hidden">
         {/* Action Buttons Bar */}
-        <div className="bg-background flex items-center justify-between overflow-hidden px-button-bar-x py-button-bar-y rounded-controls w-full">
+        <div className="bg-background flex items-center justify-center gap-[32px] overflow-hidden px-button-bar-x py-button-bar-y md:px-[32px] md:py-[16px] rounded-controls md:rounded-tl-[16px] md:rounded-tr-[16px] md:rounded-bl-none md:rounded-br-none w-full">
           {/* Upload Button (Left) */}
           <IconButton
             variant="secondary"
@@ -100,27 +99,27 @@ export default function CameraScreen({
             <CaptureIcon className="w-full h-full" iconType="camera" />
           </IconButton>
 
-          {/* Camera Switch Button (Right - Mobile only) */}
-          {isMobile && (
-            <IconButton
-              variant="secondary"
-              onClick={handleSwitchCamera}
-              ariaLabel="Switch camera"
-            >
-              <SwitchCameraIcon className="w-full h-full" />
-            </IconButton>
-          )}
+          {/* Camera Switch Button (Right) */}
+          <IconButton
+            variant="secondary"
+            onClick={handleSwitchCamera}
+            ariaLabel="Switch camera"
+          >
+            <SwitchCameraIcon className="w-full h-full" />
+          </IconButton>
         </div>
 
-        {/* Filter Selector */}
-        <FilterSelector
-          currentFilter={currentFilter}
-          onPrevious={() => onFilterChange?.('previous')}
-          onNext={() => onFilterChange?.('next')}
-        />
+        {/* Filter Selector - Part of floating card on desktop */}
+        <div className="w-full bg-background md:pb-[16px] md:flex md:items-center md:justify-center md:rounded-bl-[16px] md:rounded-br-[16px] md:rounded-tl-none md:rounded-tr-none">
+          <FilterSelector
+            currentFilter={currentFilter}
+            onPrevious={() => onFilterChange?.('previous')}
+            onNext={() => onFilterChange?.('next')}
+          />
+        </div>
 
-        {/* Bottom Spacer (for iPhone home indicator area) */}
-        <div className="h-[40px] w-full bg-background" />
+        {/* Bottom Spacer (for iPhone home indicator area) - hidden on desktop */}
+        <div className="h-[40px] w-full bg-background md:hidden" />
       </div>
     </div>
   );

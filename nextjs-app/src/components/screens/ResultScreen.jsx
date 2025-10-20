@@ -57,9 +57,9 @@ export default function ResultScreen({
   };
 
   return (
-    <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px]">
+    <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px] md:p-0 md:relative">
       {/* Generated Image Preview */}
-      <div className="flex-1 bg-camera-bg min-h-0 relative rounded-[32px] shadow-camera-view overflow-hidden w-full">
+      <div className="flex-1 bg-camera-bg min-h-0 relative rounded-[32px] shadow-camera-view overflow-hidden w-full md:absolute md:inset-0 md:rounded-none md:shadow-none">
           {/* Generated image */}
           {imageUrl ? (
             <img
@@ -74,15 +74,15 @@ export default function ResultScreen({
           )}
 
           {/* Inner shadow for depth */}
-          <div className="absolute inset-0 pointer-events-none shadow-camera-inner" />
+          <div className="absolute inset-0 pointer-events-none shadow-camera-inner md:shadow-none" />
       </div>
 
-      {/* Controls Section */}
-      <div className="flex flex-col items-start w-full">
-        <div className="bg-background flex flex-col items-center overflow-hidden py-button-bar-y rounded-controls w-full">
+      {/* Controls Section - Floating on desktop */}
+      <div className="flex flex-col items-start w-full md:absolute md:bottom-[16px] md:left-1/2 md:-translate-x-1/2 md:w-[344px] md:z-10">
+        <div className="bg-background flex flex-col items-center overflow-hidden py-button-bar-y rounded-controls w-full md:rounded-[16px] md:shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:py-0">
           {/* Action Buttons */}
-          <div className="flex flex-col gap-2.5 h-24 items-end justify-center w-full">
-            <div className="flex-1 flex gap-button-gap items-center justify-center px-button-bar-x py-button-bar-y w-full">
+          <div className="flex flex-col gap-2.5 h-24 items-end justify-center w-full md:h-auto md:flex-col-reverse md:gap-0">
+            <div className="flex-1 flex gap-button-gap items-center justify-center px-button-bar-x py-button-bar-y w-full md:gap-[32px] md:px-[32px] md:py-[16px] md:flex-initial">
               {/* Share Button */}
               <IconButton
                 variant="secondary"
@@ -113,8 +113,8 @@ export default function ResultScreen({
           </div>
         </div>
 
-        {/* Bottom Spacer (for iPhone home indicator area) */}
-        <div className="h-[40px] w-full bg-background" />
+        {/* Bottom Spacer (for iPhone home indicator area) - hidden on desktop */}
+        <div className="h-[40px] w-full bg-background md:hidden" />
       </div>
     </div>
   );

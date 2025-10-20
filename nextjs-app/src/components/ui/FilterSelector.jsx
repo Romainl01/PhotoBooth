@@ -20,7 +20,7 @@ export default function FilterSelector({
   className = '',
 }) {
   return (
-    <div className={`flex gap-filter-gap items-center ${className}`}>
+    <div className={`flex gap-filter-gap md:gap-[24px] items-center ${className}`}>
       {/* Left Arrow */}
       <IconButton
         variant="nav"

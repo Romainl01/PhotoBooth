@@ -194,7 +194,7 @@ export default function Home() {
   // Render current screen
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-[402px] mx-auto h-screen relative">
+      <div className="max-w-[402px] md:max-w-none mx-auto h-screen relative">
         {/* Show camera screen when loading (it stays visible under overlay) */}
         {(currentScreen === SCREENS.CAMERA || currentScreen === SCREENS.LOADING) && (
           <CameraScreen
@@ -204,7 +204,6 @@ export default function Home() {
             onUpload={handleUpload}
             videoRef={videoRef}
             canvasRef={canvasRef}
-            isMobile={isMobile}
           />
         )}
 
@@ -225,9 +224,9 @@ export default function Home() {
           <GenericError onRetry={handleApiRetry} />
         )}
 
-        {/* Loading overlay - appears over camera screen */}
+        {/* Loading overlay - appears over camera screen with captured photo */}
         {currentScreen === SCREENS.LOADING && (
-          <Loader message="Loading..." />
+          <Loader message="Loading..." imageUrl={capturedImage} />
         )}
       </div>
     </div>
