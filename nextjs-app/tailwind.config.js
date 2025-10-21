@@ -73,6 +73,9 @@ module.exports = {
         'button-nav': '48px',
         'error-icon': '88px',
       },
+      scale: {
+        'button-press': '0.95',
+      },
     },
   },
   plugins: [],

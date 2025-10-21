@@ -41,7 +41,7 @@ export default function IconButton({
         justify-center
         cursor-pointer
         transition-transform
-        active:scale-[0.97]
+        active:scale-button-press
         disabled:opacity-50
         disabled:cursor-not-allowed
         bg-transparent

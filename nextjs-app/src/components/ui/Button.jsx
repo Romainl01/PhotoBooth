@@ -34,7 +34,7 @@ export default function Button({
         w-full
         cursor-pointer
         transition-transform
-        active:scale-95
+        active:scale-button-press
         disabled:opacity-50
         disabled:cursor-not-allowed
         border-0
