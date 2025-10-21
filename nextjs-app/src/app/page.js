@@ -213,6 +213,7 @@ export default function Home() {
             onNewPhoto={handleNewPhoto}
             onShare={handleShare}
             onDownload={handleDownload}
+            isMobile={isMobile}
           />
         )}
 

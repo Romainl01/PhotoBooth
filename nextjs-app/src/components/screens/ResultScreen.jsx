@@ -4,7 +4,7 @@
  * Displays the generated image with three actions:
  * - Share: Opens native share dialog
  * - New Photo: Returns to camera screen
- * - Download: Downloads the image to device
+ * - Download: Desktop downloads file, Mobile opens share dialog (allows saving to Photos)
  */
 
 'use client';
@@ -19,6 +19,7 @@ export default function ResultScreen({
   onNewPhoto,
   onShare,
   onDownload,
+  isMobile = false,
 }) {
   const handleShare = async () => {
     if (navigator.share && imageUrl) {
@@ -44,16 +45,47 @@ export default function ResultScreen({
     }
   };
 
-  const handleDownload = () => {
-    if (imageUrl) {
-      const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = `grain-photo-${Date.now()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const handleDownload = async () => {
+    // On mobile, use Web Share API to allow saving to Photos
+    if (isMobile && navigator.share && imageUrl) {
+      try {
+        // Fetch the image and convert to blob
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'grain-photo.jpg', { type: 'image/jpeg' });
+
+        await navigator.share({
+          files: [file],
+          title: 'Grain Photo',
+          text: 'Check out my Grain photo!',
+        });
+
+        onDownload?.();
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // Fallback to standard download on error
+        if (imageUrl) {
+          const link = document.createElement('a');
+          link.href = imageUrl;
+          link.download = `grain-photo-${Date.now()}.jpg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+        onDownload?.();
+      }
+    } else {
+      // Desktop: Standard download behavior
+      if (imageUrl) {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = `grain-photo-${Date.now()}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      onDownload?.();
     }
-    onDownload?.();
   };
 
   return (
