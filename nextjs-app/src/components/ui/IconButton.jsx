@@ -44,6 +44,12 @@ export default function IconButton({
         active:scale-[0.97]
         disabled:opacity-50
         disabled:cursor-not-allowed
+        bg-transparent
+        border-0
+        outline-none
+        focus:outline-none
+        p-0
+        m-0
         ${className}
       `}
       {...props}

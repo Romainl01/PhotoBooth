@@ -15,9 +15,11 @@
 import { useRef, useState } from 'react';
 import IconButton from '../ui/IconButton';
 import FilterSelector from '../ui/FilterSelector';
+import InfoModal from '../ui/InfoModal';
 import CaptureIcon from '../icons/CaptureIcon';
 import UploadIcon from '../icons/UploadIcon';
 import SwitchCameraIcon from '../icons/SwitchCameraIcon';
+import InfoIcon from '../icons/InfoIcon';
 
 export default function CameraScreen({
   currentFilter,
@@ -29,6 +31,7 @@ export default function CameraScreen({
 }) {
   const fileInputRef = useRef(null);
   const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -46,6 +49,14 @@ export default function CameraScreen({
     setFacingMode(newFacingMode);
     // This would trigger re-initialization of camera with new facing mode
     // Implementation will be handled in the parent component/context
+  };
+
+  const handleInfoClick = () => {
+    setIsInfoModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsInfoModalOpen(false);
   };
 
   return (
@@ -69,7 +80,7 @@ export default function CameraScreen({
       </div>
 
       {/* Controls Section - Floating on desktop */}
-      <div className="flex flex-col items-center w-full md:absolute md:bottom-[16px] md:left-1/2 md:-translate-x-1/2 md:max-w-[400px] md:w-auto md:z-10 md:rounded-[16px] md:shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:overflow-hidden">
+      <div className="flex flex-col items-center w-full md:absolute md:bottom-[16px] md:left-1/2 md:-translate-x-1/2 md:max-w-[400px] md:w-auto md:z-10 md:rounded-[16px] md:shadow-[0px_12px_24px_rgba(0,0,0,0.4),0px_6px_12px_rgba(0,0,0,0.5)] md:overflow-hidden">
         {/* Action Buttons Bar */}
         <div className="bg-background flex items-center justify-center gap-[32px] overflow-hidden px-button-bar-x py-button-bar-y md:px-[32px] md:py-[16px] rounded-controls md:rounded-tl-[16px] md:rounded-tr-[16px] md:rounded-bl-none md:rounded-br-none w-full">
           {/* Upload Button (Left) */}
@@ -99,18 +110,18 @@ export default function CameraScreen({
             <CaptureIcon className="w-full h-full" iconType="camera" />
           </IconButton>
 
-          {/* Camera Switch Button (Right) */}
+          {/* Info Button (Mobile and Desktop) */}
           <IconButton
             variant="secondary"
-            onClick={handleSwitchCamera}
-            ariaLabel="Switch camera"
+            onClick={handleInfoClick}
+            ariaLabel="Information"
           >
-            <SwitchCameraIcon className="w-full h-full" />
+            <InfoIcon className="w-full h-full" />
           </IconButton>
         </div>
 
         {/* Filter Selector - Part of floating card on desktop */}
-        <div className="w-full bg-background md:pb-[16px] md:flex md:items-center md:justify-center md:rounded-bl-[16px] md:rounded-br-[16px] md:rounded-tl-none md:rounded-tr-none">
+        <div className="flex items-center justify-center w-full bg-background md:pb-[16px] md:rounded-bl-[16px] md:rounded-br-[16px] md:rounded-tl-none md:rounded-tr-none">
           <FilterSelector
             currentFilter={currentFilter}
             onPrevious={() => onFilterChange?.('previous')}
@@ -121,6 +132,9 @@ export default function CameraScreen({
         {/* Bottom Spacer (for iPhone home indicator area) - hidden on desktop */}
         <div className="h-[40px] w-full bg-background md:hidden" />
       </div>
+
+      {/* Info Modal - Desktop only */}
+      <InfoModal isOpen={isInfoModalOpen} onClose={handleCloseModal} />
     </div>
   );
 }
