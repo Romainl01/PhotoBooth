@@ -8,7 +8,7 @@ import GenericError from '@/components/screens/GenericError'
 import Loader from '@/components/ui/Loader'
 
 // Available filters
-const FILTERS = ['Creative', 'Corporate', 'Executive']
+const FILTERS = ['Executive', 'Wes Anderson', 'Urban', 'Runway', 'LinkedIn']
 
 // Screen states
 const SCREENS = {
@@ -127,9 +127,8 @@ export default function Home() {
     // Show loading screen immediately
     setCurrentScreen(SCREENS.LOADING)
 
-    const filterName = FILTERS[filterIndex]
-    const stylePrompt = `${filterName} Professional`
-    console.log('Generating with filter:', filterName, 'Full prompt:', stylePrompt)
+    const style = FILTERS[filterIndex]
+    console.log('Generating with style:', style)
 
     try {
       const response = await fetch('/api/generate-headshot', {
@@ -139,7 +138,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           image: imageData,
-          style: stylePrompt
+          style: style
         })
       })
 
