@@ -13,6 +13,7 @@ import IconButton from '../ui/IconButton';
 import ShareIcon from '../icons/ShareIcon';
 import RetryIcon from '../icons/RetryIcon';
 import DownloadIcon from '../icons/DownloadIcon';
+import { addWatermark } from '@/lib/watermark';
 
 export default function ResultScreen({
   imageUrl,
@@ -21,19 +22,26 @@ export default function ResultScreen({
   onDownload,
   isMobile = false,
 }) {
+
   const handleShare = async () => {
     if (navigator.share && imageUrl) {
       try {
-        // Fetch the image and convert to blob
-        const response = await fetch(imageUrl);
+        // Apply watermark to image before sharing
+        const watermarkedUrl = await addWatermark(imageUrl);
+
+        // Fetch the watermarked image and convert to blob
+        const response = await fetch(watermarkedUrl);
         const blob = await response.blob();
         const file = new File([blob], 'morpheo-photo.jpg', { type: 'image/jpeg' });
 
         await navigator.share({
           files: [file],
           title: 'Morpheo Photo',
-          text: 'Generate your AI picture on https://morpheo-phi.vercel.app/',
+          text: 'Generate your AI picture on morpheo-phi.vercel.app/',
         });
+
+        // Cleanup blob URL
+        URL.revokeObjectURL(watermarkedUrl);
       } catch (error) {
         console.error('Error sharing:', error);
         // Fallback to onShare callback if provided
@@ -46,44 +54,48 @@ export default function ResultScreen({
   };
 
   const handleDownload = async () => {
-    // On mobile, use Web Share API to allow saving to Photos
-    if (isMobile && navigator.share && imageUrl) {
-      try {
-        // Fetch the image and convert to blob
-        const response = await fetch(imageUrl);
+    if (!imageUrl) return;
+
+    try {
+      // Apply watermark to image before downloading
+      const watermarkedUrl = await addWatermark(imageUrl);
+
+      // On mobile, use Web Share API to allow saving to Photos
+      if (isMobile && navigator.share) {
+        // Fetch the watermarked image and convert to blob
+        const response = await fetch(watermarkedUrl);
         const blob = await response.blob();
         const file = new File([blob], 'morpheo-photo.jpg', { type: 'image/jpeg' });
 
         await navigator.share({
           files: [file],
           title: 'Morpheo Photo',
-          text: 'Generate your AI picture on https://morpheo-phi.vercel.app/',
+          text: 'Generate your AI picture on morpheo-phi.vercel.app/',
         });
 
         onDownload?.();
-      } catch (error) {
-        console.error('Error sharing:', error);
-        // Fallback to standard download on error
-        if (imageUrl) {
-          const link = document.createElement('a');
-          link.href = imageUrl;
-          link.download = `morpheo-photo-${Date.now()}.jpg`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-        onDownload?.();
-      }
-    } else {
-      // Desktop: Standard download behavior
-      if (imageUrl) {
+      } else {
+        // Desktop: Standard download behavior
         const link = document.createElement('a');
-        link.href = imageUrl;
-        link.download = `grain-photo-${Date.now()}.jpg`;
+        link.href = watermarkedUrl;
+        link.download = `morpheo-photo-${Date.now()}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        onDownload?.();
       }
+
+      // Cleanup blob URL
+      URL.revokeObjectURL(watermarkedUrl);
+    } catch (error) {
+      console.error('Error adding watermark for download:', error);
+      // Fallback to original image on error
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `morpheo-photo-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       onDownload?.();
     }
   };
@@ -92,7 +104,7 @@ export default function ResultScreen({
     <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px] md:p-0 md:relative">
       {/* Generated Image Preview */}
       <div className="flex-1 bg-camera-bg min-h-0 relative rounded-[32px] shadow-camera-view overflow-hidden w-full md:absolute md:inset-0 md:rounded-none md:shadow-none">
-          {/* Generated image */}
+          {/* Generated image (watermark applied only on share/download) */}
           {imageUrl ? (
             <img
               src={imageUrl}
