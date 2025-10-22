@@ -27,12 +27,12 @@ export default function ResultScreen({
         // Fetch the image and convert to blob
         const response = await fetch(imageUrl);
         const blob = await response.blob();
-        const file = new File([blob], 'grain-photo.jpg', { type: 'image/jpeg' });
+        const file = new File([blob], 'morpheo-photo.jpg', { type: 'image/jpeg' });
 
         await navigator.share({
           files: [file],
-          title: 'Grain Photo',
-          text: 'Check out my Grain photo!',
+          title: 'Morpheo Photo',
+          text: 'Generate your AI picture on https://morpheo-phi.vercel.app/',
         });
       } catch (error) {
         console.error('Error sharing:', error);
@@ -52,12 +52,12 @@ export default function ResultScreen({
         // Fetch the image and convert to blob
         const response = await fetch(imageUrl);
         const blob = await response.blob();
-        const file = new File([blob], 'grain-photo.jpg', { type: 'image/jpeg' });
+        const file = new File([blob], 'morpheo-photo.jpg', { type: 'image/jpeg' });
 
         await navigator.share({
           files: [file],
-          title: 'Grain Photo',
-          text: 'Check out my Grain photo!',
+          title: 'Morpheo Photo',
+          text: 'Generate your AI picture on https://morpheo-phi.vercel.app/',
         });
 
         onDownload?.();
@@ -67,7 +67,7 @@ export default function ResultScreen({
         if (imageUrl) {
           const link = document.createElement('a');
           link.href = imageUrl;
-          link.download = `grain-photo-${Date.now()}.jpg`;
+          link.download = `morpheo-photo-${Date.now()}.jpg`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);

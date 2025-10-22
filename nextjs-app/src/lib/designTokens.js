@@ -1,4 +1,4 @@
-// Grain Design System Tokens
+// Morpheo Design System Tokens
 // Extracted from Figma designs (excluding status bar - immersive mockup only)
 
 export const colors = {

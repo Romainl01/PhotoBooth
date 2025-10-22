@@ -24,7 +24,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "Grain - Creative Photo Generator",
+  title: "Morpheo - Creative Photo Generator",
   description: "Transform your photos with AI-powered creative filters",
   icons: {
     icon: [
