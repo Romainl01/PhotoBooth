@@ -6,9 +6,7 @@ import ResultScreen from '@/components/screens/ResultScreen'
 import CameraAccessError from '@/components/screens/CameraAccessError'
 import GenericError from '@/components/screens/GenericError'
 import Loader from '@/components/ui/Loader'
-
-// Available filters
-const FILTERS = ['Executive', 'Wes Anderson', 'Urban', 'Runway', 'LinkedIn']
+import { FILTERS } from '@/constants/filters'
 
 // Screen states
 const SCREENS = {

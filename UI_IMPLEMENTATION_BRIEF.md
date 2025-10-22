@@ -4,7 +4,7 @@
 - Filter component X
 - Spacing X
 - Animations X
-- Desktop UI 
-- About button 
-- Prompts
+- Desktop UI X
+- About button X
+- Prompts 
 
