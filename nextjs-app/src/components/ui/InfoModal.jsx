@@ -39,6 +39,10 @@ export default function InfoModal({ isOpen, onClose }) {
     window.open('https://www.linkedin.com/in/romain-lagrange1/', '_blank', 'noopener,noreferrer');
   };
 
+  const handleSupportClick = () => {
+    window.open('https://buymeacoffee.com/morpheo', '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-fadeIn">
       {/* Overlay */}
@@ -65,10 +69,18 @@ export default function InfoModal({ isOpen, onClose }) {
           </p>
         </div>
 
-        {/* Contact Button */}
-        <Button onClick={handleContactClick}>
-          Contact me
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-[16px]">
+          {/* Contact Button */}
+          <Button onClick={handleContactClick}>
+            Contact me
+          </Button>
+
+          {/* Support Button */}
+          <Button onClick={handleSupportClick}>
+            Support this project <span className="font-sans ml-2">☕</span>
+          </Button>
+        </div>
       </div>
     </div>
   );
