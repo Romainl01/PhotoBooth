@@ -14,7 +14,8 @@ export const FILTERS = [
   'Wes Anderson',
   'Urban',
   'Runway',
-  'LinkedIn'
+  'LinkedIn',
+  'Marseille'
 ];
 
 /**
