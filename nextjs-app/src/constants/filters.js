@@ -15,8 +15,7 @@ export const FILTERS = [
   'Urban',
   'Runway',
   'LinkedIn',
-  'Marseille',
-  'Skull'
+  'Marseille'
 ];
 
 /**
