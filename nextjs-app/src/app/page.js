@@ -90,9 +90,23 @@ export default function Home() {
     const video = videoRef.current
     const canvas = canvasRef.current
 
+    // Validate video is ready
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error('Video not ready - dimensions are 0')
+      setCurrentScreen(SCREENS.CAMERA_ERROR)
+      return
+    }
+
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
+
+    // Validate canvas dimensions
+    if (canvas.width === 0 || canvas.height === 0) {
+      console.error('Canvas initialization failed - dimensions are 0')
+      setCurrentScreen(SCREENS.CAMERA_ERROR)
+      return
+    }
 
     // Draw video frame to canvas (flipped horizontally)
     const ctx = canvas.getContext('2d')
@@ -103,6 +117,14 @@ export default function Home() {
 
     // Convert to base64
     const imageData = canvas.toDataURL('image/jpeg', 0.95)
+
+    // Validate image data is not empty
+    if (!imageData || imageData === 'data:,' || imageData.length < 100) {
+      console.error('Failed to capture image - empty or invalid data')
+      setCurrentScreen(SCREENS.CAMERA_ERROR)
+      return
+    }
+
     setCapturedImage(imageData)
 
     // Generate image with API
@@ -111,9 +133,23 @@ export default function Home() {
 
   // Upload photo from files
   const handleUpload = async (file) => {
+    // Validate file
+    if (!file || !file.type.startsWith('image/')) {
+      console.error('Invalid file type')
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = async (e) => {
       const imageData = e.target.result
+
+      // Validate image data from file
+      if (!imageData || imageData === 'data:,' || imageData.length < 100) {
+        console.error('Failed to read image file - empty or invalid data')
+        setCurrentScreen(SCREENS.CAMERA_ERROR)
+        return
+      }
+
       setCapturedImage(imageData)
       await generateImage(imageData, currentFilterIndex)
     }
@@ -122,11 +158,24 @@ export default function Home() {
 
   // Generate image via API
   const generateImage = async (imageData, filterIndex) => {
+    // Validate inputs before making API call
+    if (!imageData || imageData === 'data:,' || imageData.length < 100) {
+      console.error('Cannot generate - invalid or empty image data')
+      setCurrentScreen(SCREENS.CAMERA_ERROR)
+      return
+    }
+
+    if (filterIndex < 0 || filterIndex >= FILTERS.length) {
+      console.error('Invalid filter index:', filterIndex)
+      setCurrentScreen(SCREENS.CAMERA_ERROR)
+      return
+    }
+
     // Show loading screen immediately
     setCurrentScreen(SCREENS.LOADING)
 
     const style = FILTERS[filterIndex]
-    console.log('Generating with style:', style)
+    console.log('Generating with style:', style, 'Image data length:', imageData.length)
 
     try {
       const response = await fetch('/api/generate-headshot', {

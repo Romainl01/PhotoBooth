@@ -14,8 +14,15 @@ export const FILTERS = [
   'Wes Anderson',
   'Urban',
   'Runway',
-  'LinkedIn',
-  'Marseille'
+  'Marseille',
+  'Skull',
+  'Kill Bill',
+  'Chucky',
+  'Zombie',
+  'Matrix',
+  'Star Wars',
+  'Harry Potter',
+  'Vampire'
 ];
 
 /**
