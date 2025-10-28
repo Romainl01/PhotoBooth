@@ -15,14 +15,13 @@ export const FILTERS = [
   'Urban',
   'Runway',
   'Marseille',
-  'Skull',
+  'Halloween',
   'Kill Bill',
   'Chucky',
   'Zombie',
   'Matrix',
   'Star Wars',
-  'Harry Potter',
-  'Vampire'
+  'Harry Potter'
 ];
 
 /**
