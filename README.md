@@ -283,23 +283,6 @@ For comprehensive documentation, see:
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. Follow established design patterns (see `PROJECT_LEARNINGS.md`)
-2. Use design tokens from `src/lib/designTokens.js`
-3. Test on both desktop and mobile
-4. Update documentation for new features
-
----
-
-## 📄 License
-
-[Add your license here]
-
----
-
 ## 👤 Creator
 
 Made with 🫶 by Romain Lagrange
