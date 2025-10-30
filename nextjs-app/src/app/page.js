@@ -6,10 +6,12 @@ import ResultScreen from '@/components/screens/ResultScreen'
 import CameraAccessError from '@/components/screens/CameraAccessError'
 import GenericError from '@/components/screens/GenericError'
 import Loader from '@/components/ui/Loader'
+import CameraPermissionModal from '@/components/ui/CameraPermissionModal'
 import { FILTERS } from '@/constants/filters'
 
 // Screen states
 const SCREENS = {
+  PERMISSION_REQUEST: 'permission_request',
   CAMERA: 'camera',
   LOADING: 'loading',
   RESULT: 'result',
@@ -19,7 +21,7 @@ const SCREENS = {
 
 export default function Home() {
   // Navigation state
-  const [currentScreen, setCurrentScreen] = useState(SCREENS.CAMERA)
+  const [currentScreen, setCurrentScreen] = useState(SCREENS.PERMISSION_REQUEST)
 
   // Filter state
   const [currentFilterIndex, setCurrentFilterIndex] = useState(0)
@@ -32,6 +34,7 @@ export default function Home() {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
+  const cameraInitializedRef = useRef(false)
 
   // Detect if mobile
   const [isMobile, setIsMobile] = useState(false)
@@ -40,19 +43,60 @@ export default function Home() {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
   }, [])
 
-  // Initialize camera
+  // Check camera permission on mount
   useEffect(() => {
-    if (currentScreen === SCREENS.CAMERA) {
-      initializeCamera()
-    }
+    checkCameraPermission()
+  }, [])
 
+  // Cleanup camera stream when component unmounts
+  useEffect(() => {
     return () => {
-      // Cleanup camera stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
     }
-  }, [currentScreen])
+  }, [])
+
+  // Check if camera permission is already granted
+  const checkCameraPermission = async () => {
+    try {
+      // Try to use Permissions API to check if permission is already granted
+      const permissionStatus = await navigator.permissions.query({ name: 'camera' })
+
+      if (permissionStatus.state === 'granted') {
+        // Permission already granted - go straight to camera (skip modal)
+        await initializeCamera()
+        setCurrentScreen(SCREENS.CAMERA)
+      } else {
+        // Need to request permission - show modal
+        setCurrentScreen(SCREENS.PERMISSION_REQUEST)
+      }
+    } catch (error) {
+      // Permissions API not supported (Safari) - fall back to showing modal
+      console.log('Permissions API not supported, showing modal:', error)
+      setCurrentScreen(SCREENS.PERMISSION_REQUEST)
+    }
+  }
+
+  // Handle camera enable button click
+  const handleEnableCamera = async () => {
+    if (cameraInitializedRef.current) return // Prevent double initialization
+    cameraInitializedRef.current = true
+
+    try {
+      await initializeCamera()
+      setCurrentScreen(SCREENS.CAMERA)
+    } catch (error) {
+      console.error('Camera access error:', error)
+      cameraInitializedRef.current = false // Reset flag on error
+      setCurrentScreen(SCREENS.CAMERA_ERROR)
+    }
+  }
+
+  // Handle modal close (user refuses camera access)
+  const handleModalClose = () => {
+    setCurrentScreen(SCREENS.CAMERA_ERROR)
+  }
 
   const initializeCamera = async () => {
     try {
@@ -269,6 +313,15 @@ export default function Home() {
 
         {currentScreen === SCREENS.API_ERROR && (
           <GenericError onRetry={handleApiRetry} />
+        )}
+
+        {/* Camera permission modal - appears on first visit or when permission needed */}
+        {currentScreen === SCREENS.PERMISSION_REQUEST && (
+          <CameraPermissionModal
+            isOpen={true}
+            onClose={handleModalClose}
+            onEnableCamera={handleEnableCamera}
+          />
         )}
 
         {/* Loading overlay - appears over camera screen with captured photo */}
