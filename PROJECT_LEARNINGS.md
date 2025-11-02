@@ -228,6 +228,103 @@ Before implementing new button or icon components:
 
 ---
 
+## 🌐 Open Graph & Social Sharing Metadata
+
+### Date: 2025-11-02
+### Feature: Social Media Preview Optimization
+
+**Challenge Encountered:**
+When sharing the Morpheo URL (https://morpheo-phi.vercel.app/) on platforms like Notion, the logo appeared broken. The investigation revealed that the site was completely missing Open Graph meta tags, which social platforms rely on to generate rich preview cards.
+
+**Technical Decisions Made:**
+
+1. **Next.js Metadata API:**
+   - Used Next.js 15's `metadata` export in `layout.js` for automatic meta tag generation
+   - Centralized all SEO and social metadata in one configuration object
+   - Leveraged built-in support for Open Graph and Twitter Cards
+
+2. **Metadata Structure:**
+   ```javascript
+   export const metadata = {
+     openGraph: {
+       title, description, url, siteName,
+       images: [{ url, width, height, alt }],
+       locale, type
+     },
+     twitter: {
+       card: 'summary_large_image',
+       title, description, images
+     }
+   }
+   ```
+
+3. **Image Considerations:**
+   - Used absolute URLs (`https://morpheo-phi.vercel.app/logo.svg`) required for external platform fetching
+   - Specified 1200x630px dimensions (1.91:1 ratio) following Open Graph best practices
+   - Added both `openGraph.images` and `twitter.images` for platform compatibility
+
+**Solutions Applied:**
+
+- Added comprehensive `openGraph` object with all required properties
+- Included `twitter` metadata for Twitter/X specific optimization
+- Used full absolute URLs instead of relative paths for cross-platform compatibility
+- Documented the implementation in MORPHEO_DOCUMENTATION.md Section 9.4
+
+**Key Learnings:**
+
+1. **Absolute URLs are Required:**
+   - External platforms like Notion, Slack, and Discord cannot fetch images from relative paths
+   - Always use full `https://domain.com/image.png` format in `og:image`
+
+2. **Platform-Specific Metadata:**
+   - Different platforms prioritize different meta tags (Open Graph vs Twitter Cards)
+   - Include both for maximum compatibility
+   - `twitter:card: 'summary_large_image'` ensures large preview cards vs small thumbnails
+
+3. **SVG Compatibility Caveat:**
+   - While SVG works for favicons, PNG/JPG (1200x630px) is preferred for social sharing
+   - Some platforms may not render SVG social images correctly
+   - Consider creating a dedicated `og-image.png` for better compatibility
+
+4. **Next.js Automation:**
+   - Next.js automatically generates `<meta>` tags from the `metadata` export
+   - No need to manually add tags to `<head>` like in vanilla HTML/React
+   - Changes to metadata require a new build/deployment to take effect
+
+5. **Cache Invalidation:**
+   - Social platforms cache meta tags for 24-48 hours
+   - Testing with validators (OpenGraph.xyz) shows fresh data
+   - Notion may require re-pasting the URL to refresh the preview
+
+**Future Improvements to Consider:**
+
+1. Create a dedicated social sharing image (1200x630px PNG) showing:
+   - Morpheo branding
+   - Visual example of a filter transformation
+   - Tagline or call-to-action
+
+2. Add dynamic Open Graph images:
+   - Generate unique preview images per filter style
+   - Show before/after transformation previews
+   - Implement using Next.js dynamic metadata
+
+3. Additional metadata:
+   - `og:video` for video demos
+   - `article:author` for attribution
+   - Schema.org structured data for search engines
+
+4. Monitoring:
+   - Track social referral traffic in Vercel Analytics
+   - Monitor which platforms drive the most traffic
+   - A/B test different preview images
+
+**References:**
+- [Next.js Metadata API](https://nextjs.org/docs/app/building-your-application/optimizing/metadata)
+- [Open Graph Protocol](https://ogp.me/)
+- [Twitter Cards Documentation](https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/abouts-cards)
+
+---
+
 ## 🔄 When to Update This Document
 
 Add to this document when you:
@@ -239,5 +336,5 @@ Add to this document when you:
 
 ---
 
-*Last updated: 2025-10-21*
+*Last updated: 2025-11-02*
 *Project: NanoBanana Skeumorphic Camera App*
