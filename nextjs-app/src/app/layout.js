@@ -25,7 +25,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "Morpheo - Creative Photo Generator",
+  title: "Morpheo - AI Photobooth",
   description: "Transform your photos with AI-powered creative filters",
   icons: {
     icon: [
@@ -35,6 +35,28 @@ export const metadata = {
     ],
     apple: '/logo.svg',
     shortcut: '/logo.svg',
+  },
+  openGraph: {
+    title: "Morpheo - AI Photobooth",
+    description: "Transform your photos with AI-powered creative filters",
+    url: 'https://morpheo-phi.vercel.app',
+    siteName: 'Morpheo',
+    images: [
+      {
+        url: 'https://morpheo-phi.vercel.app/logo.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Morpheo Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Morpheo - AI Photobooth",
+    description: "Transform your photos with AI-powered creative filters",
+    images: ['https://morpheo-phi.vercel.app/logo.svg'],
   },
 };
 

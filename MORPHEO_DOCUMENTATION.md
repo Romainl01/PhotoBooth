@@ -2326,7 +2326,88 @@ KV_REST_API_TOKEN=your_upstash_redis_token
 3. **Use Vercel Secrets:** Store sensitive data in Vercel dashboard
 4. **Restrict API Keys:** Limit Google API key to specific domains
 
-### 9.4 Performance Monitoring
+### 9.4 SEO & Social Sharing
+
+Morpheo includes comprehensive Open Graph and Twitter Card metadata for optimal social sharing experiences.
+
+#### Metadata Configuration
+
+**File:** `nextjs-app/src/app/layout.js`
+
+```javascript
+export const metadata = {
+  title: "Morpheo - AI Photobooth",
+  description: "Transform your photos with AI-powered creative filters",
+  icons: {
+    icon: [
+      { url: '/logo.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/logo.svg',
+    shortcut: '/logo.svg',
+  },
+  openGraph: {
+    title: "Morpheo - AI Photobooth",
+    description: "Transform your photos with AI-powered creative filters",
+    url: 'https://morpheo-phi.vercel.app',
+    siteName: 'Morpheo',
+    images: [
+      {
+        url: 'https://morpheo-phi.vercel.app/logo.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Morpheo Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Morpheo - AI Photobooth",
+    description: "Transform your photos with AI-powered creative filters",
+    images: ['https://morpheo-phi.vercel.app/logo.svg'],
+  },
+};
+```
+
+#### Social Sharing Features
+
+**Platforms Optimized For:**
+- **Notion:** Rich preview cards with logo
+- **Slack:** Unfurled links with metadata
+- **Discord:** Embedded previews
+- **Facebook:** Open Graph integration
+- **Twitter/X:** Large image cards
+- **LinkedIn:** Professional link previews
+
+**Meta Tags Generated:**
+- `og:title` - Page title for social platforms
+- `og:description` - Brief description of the app
+- `og:image` - Preview image (1200x630px recommended)
+- `og:url` - Canonical URL
+- `twitter:card` - Twitter card type (large image)
+- `twitter:image` - Twitter preview image
+
+#### Best Practices
+
+1. **Image Requirements:**
+   - Recommended size: 1200x630px (1.91:1 ratio)
+   - Format: PNG or JPG preferred over SVG for compatibility
+   - Absolute URLs required for external platforms
+
+2. **Testing Social Previews:**
+   - [OpenGraph.xyz](https://www.opengraph.xyz/) - Test all platforms
+   - [Twitter Card Validator](https://cards-dev.twitter.com/validator)
+   - [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
+
+3. **Cache Invalidation:**
+   - Social platforms cache meta tags for 24-48 hours
+   - Use validators with cache-busting after updates
+   - Notion may require re-pasting the URL
+
+### 9.5 Performance Monitoring
 
 #### Vercel Analytics
 
