@@ -21,8 +21,8 @@ export const FILTERS = [
   'Zombie',
   'Matrix',
   'Star Wars',
-  'Harry Potter', 
-  'Mugshot'
+  'Harry Potter'
+  // 'Mugshot'
 ];
 
 /**
