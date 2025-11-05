@@ -5,8 +5,11 @@ import CameraScreen from '@/components/screens/CameraScreen'
 import ResultScreen from '@/components/screens/ResultScreen'
 import CameraAccessError from '@/components/screens/CameraAccessError'
 import GenericError from '@/components/screens/GenericError'
+import FileFormatError from '@/components/screens/FileFormatError'
+import FileSizeError from '@/components/screens/FileSizeError'
 import Loader from '@/components/ui/Loader'
 import { FILTERS } from '@/constants/filters'
+import { validateFileFormat, validateFileSize, formatFileSize } from '@/lib/fileValidation'
 
 // Screen states
 const SCREENS = {
@@ -15,6 +18,8 @@ const SCREENS = {
   RESULT: 'result',
   CAMERA_ERROR: 'camera_error',
   API_ERROR: 'api_error',
+  FILE_FORMAT_ERROR: 'file_format_error',
+  FILE_SIZE_ERROR: 'file_size_error',
 }
 
 export default function Home() {
@@ -133,17 +138,33 @@ export default function Home() {
 
   // Upload photo from files
   const handleUpload = async (file) => {
-    // Validate file
-    if (!file || !file.type.startsWith('image/')) {
-      console.error('Invalid file type')
+    // Guard: No file selected
+    if (!file) {
+      console.error('No file selected')
       return
     }
 
+    // Validation Step 1: File Format
+    if (!validateFileFormat(file)) {
+      console.error('Invalid file format:', file.type)
+      setCurrentScreen(SCREENS.FILE_FORMAT_ERROR)
+      return
+    }
+
+    // Validation Step 2: File Size
+    if (!validateFileSize(file)) {
+      console.error('File too large:', formatFileSize(file.size))
+      setCurrentScreen(SCREENS.FILE_SIZE_ERROR)
+      return
+    }
+
+    // Proceed with existing flow (validation passed)
     const reader = new FileReader()
+
     reader.onload = async (e) => {
       const imageData = e.target.result
 
-      // Validate image data from file
+      // Validate FileReader output
       if (!imageData || imageData === 'data:,' || imageData.length < 100) {
         console.error('Failed to read image file - empty or invalid data')
         setCurrentScreen(SCREENS.CAMERA_ERROR)
@@ -153,6 +174,12 @@ export default function Home() {
       setCapturedImage(imageData)
       await generateImage(imageData, currentFilterIndex)
     }
+
+    reader.onerror = () => {
+      console.error('FileReader error')
+      setCurrentScreen(SCREENS.API_ERROR)
+    }
+
     reader.readAsDataURL(file)
   }
 
@@ -218,6 +245,16 @@ export default function Home() {
     }
   }
 
+  // Retry file upload after format error
+  const handleFileFormatRetry = () => {
+    setCurrentScreen(SCREENS.CAMERA)
+  }
+
+  // Retry file upload after size error
+  const handleFileSizeRetry = () => {
+    setCurrentScreen(SCREENS.CAMERA)
+  }
+
   // Return to camera
   const handleNewPhoto = () => {
     setCapturedImage(null)
@@ -269,6 +306,14 @@ export default function Home() {
 
         {currentScreen === SCREENS.API_ERROR && (
           <GenericError onRetry={handleApiRetry} />
+        )}
+
+        {currentScreen === SCREENS.FILE_FORMAT_ERROR && (
+          <FileFormatError onRetry={handleFileFormatRetry} />
+        )}
+
+        {currentScreen === SCREENS.FILE_SIZE_ERROR && (
+          <FileSizeError onRetry={handleFileSizeRetry} />
         )}
 
         {/* Loading overlay - appears over camera screen with captured photo */}
