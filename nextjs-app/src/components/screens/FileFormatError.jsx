@@ -15,7 +15,7 @@ export default function FileFormatError({ onRetry }) {
       heading="Unsupported file format"
       message="Please upload JPEG, PNG, or WebP images only."
       onRetry={onRetry}
-      buttonText="Upload Another"
+      buttonText="Upload another"
     />
   );
 }

@@ -15,7 +15,7 @@ export default function FileSizeError({ onRetry }) {
       heading="File too large"
       message="Maximum file size is 10MB. Please choose a smaller image."
       onRetry={onRetry}
-      buttonText="Upload Another"
+      buttonText="Upload another"
     />
   );
 }

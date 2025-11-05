@@ -43,10 +43,39 @@ export async function POST(request) {
       contents: contents,
     });
 
+    // Validate response structure
+    if (!response || !response.candidates || response.candidates.length === 0) {
+      console.error('Invalid API response:', JSON.stringify(response, null, 2));
+      throw new Error('No candidates in API response');
+    }
+
+    const candidate = response.candidates[0];
+
+    // Check for API rejection with specific finish reasons
+    if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+      console.error('API rejected generation:', JSON.stringify(candidate, null, 2));
+
+      // Provide user-friendly error messages based on finish reason
+      const errorMessages = {
+        'SAFETY': 'Image cannot be processed due to safety guidelines',
+        'IMAGE_OTHER': 'Unable to process this image. Please try a different photo with clear facial features',
+        'MAX_TOKENS': 'We couldn\'t create your image. Please try a different photo',
+        'RECITATION': 'Image too similar to existing content'
+      };
+
+      const userMessage = errorMessages[candidate.finishReason] || 'Image could not be processed';
+      throw new Error(userMessage);
+    }
+
+    if (!candidate.content || !candidate.content.parts) {
+      console.error('Invalid candidate structure:', JSON.stringify(candidate, null, 2));
+      throw new Error('Invalid response structure from API');
+    }
+
     // Extract generated image from response
     let generatedImageData = null;
 
-    for (const part of response.candidates[0].content.parts) {
+    for (const part of candidate.content.parts) {
       if (part.inlineData) {
         generatedImageData = part.inlineData.data;
         break;
