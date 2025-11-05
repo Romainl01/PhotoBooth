@@ -325,6 +325,130 @@ When sharing the Morpheo URL (https://morpheo-phi.vercel.app/) on platforms like
 
 ---
 
+## 🎲 Dynamic Loader with Fisher-Yates Shuffle
+
+### Date: 2025-11-05
+### Feature: Contextual Loading Messages with Randomization
+
+**Challenge Encountered:**
+The static "Loading..." text during Google API calls (10-20 seconds) created a poor user experience. Users had no engagement during the wait, making the delay feel longer and increasing perceived abandonment risk.
+
+**Technical Decisions Made:**
+
+1. **Message Architecture:**
+   - Created 15 contextual messages per filter (195 total messages across 13 filters)
+   - Messages stored in `/constants/loadingMessages.js` following existing pattern
+   - Tone: Playful, pop culture references, filter-specific humor
+
+2. **Randomization Strategy - Fisher-Yates Shuffle:**
+   - Chose shuffled array approach over pure random to guarantee variety
+   - Ensures all 15 messages are seen before any repeats
+   - Provides 54 seconds of unique content (15 messages × 3.6s each)
+
+3. **Implementation Pattern:**
+   ```javascript
+   // Shuffle on component mount and when reaching end of array
+   const [shuffledMessages, setShuffledMessages] = useState(() => shuffleArray(messages))
+
+   // Fisher-Yates algorithm for unbiased shuffle
+   function shuffleArray(array) {
+     const shuffled = [...array];  // Create copy (avoid mutation)
+     for (let i = array.length - 1; i > 0; i--) {
+       const j = Math.floor(Math.random() * (i + 1));
+       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+     }
+     return shuffled;
+   }
+   ```
+
+4. **Timing Architecture:**
+   - Message display: 3000ms
+   - Fade out: 300ms
+   - Fade in: 300ms
+   - **Total cycle: 3600ms** (critical - NOT 3000ms!)
+   - Using `setInterval(3600ms)` prevents timing drift
+
+5. **Accessibility Features:**
+   - Respects `prefers-reduced-motion` (disables animations)
+   - ARIA live region (`role="status"`, `aria-live="polite"`)
+   - Text shadow for readability over light photos
+   - Proper cleanup to prevent memory leaks
+
+**Solutions Applied:**
+
+- Used React `useMemo` to cache message lookup (performance optimization)
+- State management: `shuffledMessages` separate from base `messages`
+- Reshuffle logic on reaching array end or filter change
+- Design tokens (`text-body`, `text-text-primary`) for consistency
+
+**Key Learnings:**
+
+1. **Array Reference vs Copy:**
+   - `const shuffled = array` creates reference, NOT copy
+   - Mutating `shuffled` would corrupt original array
+   - **Always use spread operator:** `const shuffled = [...array]`
+   - Critical for React state immutability
+
+2. **Fisher-Yates > Simple Random:**
+   - `array.sort(() => Math.random() - 0.5)` is BIASED
+   - Fisher-Yates guarantees uniform distribution
+   - O(n) time complexity
+   - Industry standard for unbiased shuffling
+
+3. **Timing Math is Critical:**
+   - Initial implementation used `setInterval(3000ms)`
+   - **Bug:** Each message was visible for decreasing time due to transition overhead
+   - **Fix:** `setInterval(3600ms)` accounts for 600ms transitions
+   - Always include transition time in interval calculations
+
+4. **Math.floor vs Math.round:**
+   - `Math.floor(Math.random() * (i+1))` ensures uniform distribution
+   - `Math.round()` would bias toward middle values
+   - Each integer must have equal-sized range (exactly 1.0 wide)
+
+5. **Why (i+1) not just i:**
+   - `Math.random() * i` would never include current position
+   - Element could never swap with itself
+   - Including current position is valid randomness
+
+6. **React State Initialization:**
+   - `useState(() => shuffleArray(messages))` - lazy initialization
+   - Function only runs ONCE on mount (not every render)
+   - More efficient for expensive operations
+
+7. **Monospace Font Considerations:**
+   - IBM Plex Mono (monospace) is wider than proportional fonts
+   - Had to reduce max message length from 15 to 10 words
+   - Test all messages on 320px viewport (iPhone SE)
+
+**Future Improvements to Consider:**
+
+1. **Message Analytics:**
+   - Track which messages users see most (indicates slow API times)
+   - Identify messages that correlate with lower bounce rates
+   - A/B test different tones (silly vs informative)
+
+2. **Dynamic Message Count:**
+   - Adjust shuffle size based on typical API response time
+   - Shorter arrays for fast responses, longer for slow
+
+3. **Progressive Enhancement:**
+   - Show generic messages on first load
+   - Fetch filter-specific messages asynchronously
+   - Reduces initial bundle size
+
+4. **Localization:**
+   - Translate messages for international users
+   - Keep cultural references relevant per region
+   - Consider i18n integration
+
+**References:**
+- [Fisher-Yates Shuffle Algorithm](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle)
+- [JavaScript Array Mutation Gotchas](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#copying_methods_and_mutating_methods)
+- [React useState Lazy Initialization](https://react.dev/reference/react/useState#avoiding-recreating-the-initial-state)
+
+---
+
 ## 🔄 When to Update This Document
 
 Add to this document when you:

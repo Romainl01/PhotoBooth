@@ -1,0 +1,264 @@
+/**
+ * Loading Messages for Dynamic Loader
+ *
+ * Contextual, playful messages shown while waiting for Google AI API response.
+ * Messages are filter-specific to make the loading experience more engaging.
+ *
+ * Guidelines:
+ * - Keep messages short (5-10 words max for monospace font)
+ * - Pop culture references and playful tone
+ * - Sound natural, not corporate or AI-generated
+ * - 4-5 messages per filter to cover 12-20 second loading time
+ */
+
+export const LOADING_MESSAGES = {
+  'Executive': [
+    'Polishing your corner office energy...',
+    'Adding that LinkedIn CEO vibe...',
+    'Adjusting your power stance...',
+    'Summoning your inner boss mode...',
+    'Scheduling your TED Talk debut...',
+    'Crafting your elevator pitch face...',
+    'Adding some C-suite confidence...',
+    'Practicing your firm handshake look...',
+    'Channeling your quarterly earnings energy...',
+    'Prepping your boardroom presence...',
+    'Executive level unlocked...',
+    'Getting that promotion-ready glow...',
+    'Synergizing your corporate aesthetic...',
+    'Optimizing your leadership potential...',
+    'Finalizing your power move...',
+  ],
+
+  'Lord': [
+    'Commissioning your royal portrait...',
+    'Consulting the court painter...',
+    'Adding some Renaissance drama...',
+    'Preparing your throne room debut...',
+    'Summoning your noble bloodline...',
+    'Adjusting your royal posture...',
+    'Channeling centuries of power...',
+    'Preparing your coronation look...',
+    'Adding that aristocratic gaze...',
+    'Crafting your dynasty energy...',
+    'Perfecting your regal bearing...',
+    'Summoning palace intrigue vibes...',
+    'Getting that Old Master painting feel...',
+    'Channeling your inner monarch...',
+    'Finalizing your noble decree...',
+  ],
+
+  'Wes Anderson': [
+    'Centering your symmetry...',
+    'Adjusting the pastel palette...',
+    'Consulting the Grand Budapest concierge...',
+    'Perfecting your quirky aesthetic...',
+    'Balancing that dollhouse composition...',
+    'Adding some Futura font energy...',
+    'Channeling your inner Tenenbaum...',
+    'Preparing your tracking shot debut...',
+    'Getting that vintage suitcase vibe...',
+    'Summoning Bill Murray energy...',
+    'Adjusting your deadpan expression...',
+    'Crafting your whimsical world...',
+    'Adding some Anderson-approved yellow...',
+    'Perfecting your overhead shot...',
+    'Finalizing your quirky charm...',
+  ],
+
+  'Urban': [
+    'Catching that golden hour glow...',
+    'Finding your best street angle...',
+    'Adding that city lights magic...',
+    'Setting the blue hour mood...',
+    'Channeling your inner street artist...',
+    'Getting that rooftop sunset vibe...',
+    'Adding some urban explorer energy...',
+    'Capturing your concrete jungle essence...',
+    'Summoning that alleyway mystique...',
+    'Perfecting your street style stance...',
+    'Getting that neon-lit aesthetic...',
+    'Channeling metropolitan vibes...',
+    'Adding some skyline swagger...',
+    'Crafting your city slicker look...',
+    'Finalizing your urban legend...',
+  ],
+
+  'Runway': [
+    'Summoning your inner supermodel...',
+    'Preparing for your close-up...',
+    'Adding that haute couture energy...',
+    'Working those editorial angles...',
+    'Channeling your Vogue cover energy...',
+    'Perfecting your smize technique...',
+    'Getting that catwalk confidence...',
+    'Adding some high-fashion drama...',
+    'Summoning Naomi Campbell vibes...',
+    'Crafting your editorial excellence...',
+    'Preparing your front row debut...',
+    'Getting that Milan Fashion Week look...',
+    'Channeling couture perfection...',
+    'Adding fierce runway energy...',
+    'Finalizing your fashion moment...',
+  ],
+
+  'Marseille': [
+    'Fueling up the scooter...',
+    'Adding that OM passion...',
+    'Channeling Vieux-Port vibes...',
+    'Getting that Phocéen attitude...',
+    'Summoning some Canebière energy...',
+    'Preparing your bouillabaisse face...',
+    'Adding that Mediterranean swagger...',
+    'Getting your pastis ready...',
+    'Channeling that southern charm...',
+    'Summoning Pagnol film vibes...',
+    'Adding some Mistral wind energy...',
+    'Getting that Calanques explorer look...',
+    'Channeling your inner Marseillais...',
+    'Preparing your accent du sud...',
+    'Allez l\'OM energy loading...',
+  ],
+
+  'Halloween': [
+    'Picking your costume from the chaos...',
+    'Raiding the Halloween closet...',
+    'Summoning some spooky energy...',
+    'Rolling the costume dice...',
+    'Channeling random disguise vibes...',
+    'Getting that trick-or-treat ready look...',
+    'Adding some October 31st magic...',
+    'Preparing your surprise reveal...',
+    'Summoning costume party chaos...',
+    'Getting that mystery disguise...',
+    'Channeling whatever fits energy...',
+    'Adding some Halloween surprise...',
+    'Crafting your random transformation...',
+    'Getting your spooky random on...',
+    'Let the costume gods decide...',
+  ],
+
+  'Kill Bill': [
+    'Sharpening your Hattori Hanzo blade...',
+    'Channeling the Bride\'s fury...',
+    'Adding that yellow jumpsuit energy...',
+    'Preparing for your revenge montage...',
+    'Whistling that deadly tune...',
+    'Mastering the five-point palm technique...',
+    'Getting that Pai Mei training...',
+    'Adding some Crazy 88 drama...',
+    'Channeling Uma Thurman intensity...',
+    'Prepping your samurai showdown...',
+    'Summoning that katana swagger...',
+    'Crafting your kill list aesthetic...',
+    'Getting revenge served cold...',
+    'Adding that Tarantino flair...',
+    'Your Bill-slaying moment awaits...',
+  ],
+
+  'Chucky': [
+    'Waking up the Good Guy doll...',
+    'Adding that serial killer charm...',
+    'Preparing your creepy laugh...',
+    'Channeling some doll-faced terror...',
+    'Getting that possessed toy energy...',
+    'Summoning Charles Lee Ray vibes...',
+    'Adding stitched-up Chucky chaos...',
+    'Preparing your knife collection...',
+    'Getting that plastic-fantastic horror...',
+    'Channeling killer doll energy...',
+    'Summoning Child\'s Play vibes...',
+    'Adding that red-haired menace...',
+    'Getting your playdate ready...',
+    'Wanna play? Loading...',
+    'Finalizing your creepy doll debut...',
+  ],
+
+  'Zombie': [
+    'Practicing your undead shuffle...',
+    'Adding that fresh-from-the-grave look...',
+    'Perfecting your brain-craving stare...',
+    'Summoning The Walking Dead vibes...',
+    'Channeling your inner walker...',
+    'Getting that apocalypse survivor look...',
+    'Adding some decomposition drama...',
+    'Preparing your horde entrance...',
+    'Summoning Night of the Living Dead...',
+    'Getting your shambling gait ready...',
+    'Channeling zombie outbreak energy...',
+    'Adding that undead charm...',
+    'Perfecting your groaning technique...',
+    'Getting that post-apocalyptic glow...',
+    'Brains loading... please wait...',
+  ],
+
+  'Matrix': [
+    'Loading the construct...',
+    'Dodging bullets in slow-mo...',
+    'Choosing the red pill aesthetic...',
+    'Adding that cyberpunk leather...',
+    'Unplugging from the ordinary...',
+    'Entering the digital dojo...',
+    'Glitching reality just right...',
+    'Channeling your inner Neo...',
+    'Following the white rabbit...',
+    'Bending the spoon and pixels...',
+    'Downloading kung fu skills...',
+    'Escaping Agent Smith vibes...',
+    'Seeing through the code...',
+    'There is no spoon, only style...',
+    'Waking up from the simulation...',
+  ],
+
+  'Star Wars': [
+    'Consulting with the Jedi Council...',
+    'Channeling the Force...',
+    'Adjusting your lightsaber stance...',
+    'Preparing for your Cantina entrance...',
+    'Choosing your side of the Force...',
+    'Calibrating your midi-chlorian levels...',
+    'Learning from Master Yoda...',
+    'Escaping the Death Star vibes...',
+    'Finding your inner Skywalker...',
+    'Dodging the Dark Side temptation...',
+    'Tuning your X-wing pilot energy...',
+    'Summoning that Rebel Alliance spirit...',
+    'Preparing your Kenobi-level calm...',
+    'Awaiting your Padawan graduation...',
+    'May the vibes be with you...',
+  ],
+
+  'Harry Potter': [
+    'Waiting for your Hogwarts letter...',
+    'Consulting the Sorting Hat...',
+    'Brewing some Polyjuice Potion...',
+    'Adding that magical energy...',
+    'Channeling your inner wizard...',
+    'Getting your wand ready...',
+    'Summoning Patronus charm vibes...',
+    'Preparing for your OWL exams...',
+    'Adding some Butterbeer energy...',
+    'Getting that Quidditch player look...',
+    'Channeling Hermione\'s determination...',
+    'Summoning your house pride...',
+    'Preparing your spell-casting stance...',
+    'Getting that Wizarding World glow...',
+    'Mischief managed, style loading...',
+  ],
+};
+
+// Generic fallback messages (used if filter not found)
+export const GENERIC_MESSAGES = [
+  'Creating your masterpiece...',
+  'Adding some artistic flair...',
+  'Working the magic...',
+];
+
+// Development validation: ensure all filters have messages
+if (process.env.NODE_ENV === 'development') {
+  Object.keys(LOADING_MESSAGES).forEach(filter => {
+    if (LOADING_MESSAGES[filter].length < 3) {
+      console.warn(`⚠️  Filter "${filter}" has fewer than 3 messages`);
+    }
+  });
+}

@@ -273,7 +273,7 @@ export default function Home() {
 
         {/* Loading overlay - appears over camera screen with captured photo */}
         {currentScreen === SCREENS.LOADING && (
-          <Loader message="Loading..." imageUrl={capturedImage} />
+          <Loader filterName={FILTERS[currentFilterIndex]} imageUrl={capturedImage} />
         )}
       </div>
     </div>

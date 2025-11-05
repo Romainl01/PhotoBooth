@@ -45,6 +45,7 @@
 | **Camera Switching** | Toggle between front/rear cameras (mobile) | ✅ Live |
 | **Watermark Protection** | Automatic branding on shared images | ✅ Live |
 | **Web Share API** | Native mobile sharing to social platforms | ✅ Live |
+| **Dynamic Loading Messages** | Context-aware messages during AI generation | ✅ Live |
 | **Error Recovery** | Graceful error handling with retry options | ✅ Live |
 
 ### 1.3 Available Filters
