@@ -24,8 +24,8 @@ import LoadingIcon from '../icons/LoadingIcon';
 
 // Timing constants (single source of truth)
 const FADE_DURATION_MS = 300;
-const MESSAGE_DISPLAY_MS = 3000;
-const CYCLE_INTERVAL_MS = MESSAGE_DISPLAY_MS + (FADE_DURATION_MS * 2); // 3600ms total
+const MESSAGE_DISPLAY_MS = 2400;
+const CYCLE_INTERVAL_MS = MESSAGE_DISPLAY_MS + (FADE_DURATION_MS * 2); // 3000ms total
 
 /**
  * Shuffles an array using Fisher-Yates algorithm
