@@ -758,6 +758,638 @@ Rare messages (1% chance) with extra humor
 
 ---
 
+## 🎬 TYPEWRITER EFFECT ENHANCEMENT PLAN
+
+### Overview
+**Animation Name:** Typewriter Effect (also called Text Reveal Animation, Typing Animation)
+**Description:** Characters appear one-by-one from left to right, creating the illusion of text being typed in real-time
+**Purpose:** Replicate Claude Code's chat loading messages - typewriter effect with instant message changes (NO fade animations)
+
+### Core Mechanism
+```javascript
+// Character-by-character reveal
+'L' → 'Lo' → 'Loa' → 'Load' → 'Loadi' → 'Loadin' → 'Loading...'
+
+// When message changes: instant swap + restart typing
+'Loading...' → 'P' → 'Po' → 'Pol' → 'Poli' → 'Polis' → 'Polishing your corner office energy...'
+```
+
+**Implementation:** Maintain a character index that increments over time, displaying `message.slice(0, charIndex)`
+
+**KEY DESIGN CHANGE:** Remove all fade-in/fade-out animations. Messages change instantly and start typing immediately. This matches Claude Code's actual behavior and dramatically simplifies implementation.
+
+---
+
+## ⚠️ UX SIDE EFFECTS & PREVENTION
+
+### UX Side Effect 1: ~~Double Animation Overwhelm~~ ELIMINATED ✅
+**Status:** NO LONGER A CONCERN - We removed fade animations entirely
+**Original Risk:** Users experience TWO simultaneous animations (fade-in + typewriter)
+**Solution:** Instant message changes with typewriter only, matching Claude Code's behavior
+
+### UX Side Effect 2: Message Timing Mismatch - SIMPLIFIED ✅
+**Risk:** Long messages still typing when message change occurs
+**Impact:** Users can't read the full message, frustrating experience
+**Severity:** MEDIUM - Much less critical without fade transitions
+
+**Scenario Example (Without Fades):**
+- Message: "Adjusting your power stance..." (32 characters)
+- Typing speed: 40ms per character
+- Typing duration: 32 × 40ms = 1280ms
+- Reading time available: 3000ms - 1280ms = 1720ms (GOOD!)
+
+**Prevention Strategy:**
+```javascript
+// Simple approach: Fast typing speed + longer cycle
+const TYPING_SPEED_MS = 40        // Characters appear quickly
+const CYCLE_INTERVAL_MS = 3000    // 3 seconds total per message
+// Longest message ~35 chars = 1400ms typing + 1600ms reading ✅
+
+// Or even simpler: Claude Code uses very fast typing
+const TYPING_SPEED_MS = 30        // Even faster
+// Longest message ~35 chars = 1050ms typing + 1950ms reading ✅✅
+```
+
+**Recommended Solution:** Fixed 30-40ms speed with 3000ms cycle interval - Simple and proven by Claude Code
+
+### UX Side Effect 3: Excessive Motion & Fatigue
+**Risk:** Constant character-by-character animation for 12-20 seconds
+**Impact:** User fatigue, annoyance instead of delight, motion sickness
+**Severity:** MEDIUM - User experience quality
+
+**Prevention Strategy:**
+```javascript
+// Option A: Progressive reduction (only first 2 messages have typewriter)
+const shouldUseTypewriter = currentMessageIndex < 2
+
+// Option B: Faster speed after first message
+const typingSpeed = currentMessageIndex === 0 ? 50 : 30
+
+// Option C: Alternate - every other message
+const shouldUseTypewriter = currentMessageIndex % 2 === 0
+```
+
+**Recommended Solution:** Apply typewriter to ALL messages but keep speed fast (30ms) to prevent fatigue
+
+### UX Side Effect 3: Accessibility - Motion Sensitivity
+**Risk:** prefers-reduced-motion not respected by typewriter
+**Impact:** WCAG violation, users with vestibular disorders experience discomfort
+**Severity:** CRITICAL - Legal/accessibility requirement
+
+**Prevention Strategy:**
+```javascript
+// In useTypewriter hook
+if (prefersReducedMotion) {
+  setDisplayedText(text) // Show full text immediately
+  return
+}
+
+// Detect in component
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+```
+
+**Solution:** Pass `prefersReducedMotion` prop to typewriter hook, bypass typewriter animation (show instant text)
+
+**NOTE:** With no fade animations, this is now the ONLY animation to disable for reduced motion users!
+
+### UX Side Effect 4: Inconsistent Message Pacing
+**Risk:** Short messages type quickly (1s), long messages slowly (3s)
+**Impact:** Uneven rhythm, unpredictable experience
+**Severity:** LOW - Aesthetic preference
+
+**Prevention Strategy:**
+```javascript
+// Option A: Fixed speed (accepts variable duration)
+const CHAR_DELAY_MS = 30 // All messages use same speed
+
+// Option B: Normalized duration (all messages take ~1.5 seconds to type)
+const TARGET_TYPING_DURATION = 1500
+const charDelay = TARGET_TYPING_DURATION / message.length
+
+// Option C: Min/max bounds
+const charDelay = Math.max(20, Math.min(50, 1500 / message.length))
+```
+
+**Recommended Solution:** Option A (fixed 30-40ms) - Simpler, more natural typing rhythm
+
+---
+
+## ⚙️ TECHNICAL SIDE EFFECTS & PREVENTION
+
+### Technical Side Effect 1: ~~Complex Timing Orchestration~~ DRAMATICALLY SIMPLIFIED ✅
+**Status:** NO LONGER A CONCERN - Removed fade animations
+**Old Complexity:** 5 time-dependent states (fade out → change → fade in → type → pause)
+**New Simplicity:** 2 states (type → pause)
+
+**Simplified Timeline:**
+```javascript
+// Timeline (WITHOUT fades):
+// t=0:       Message changes instantly, typewriter starts immediately
+// t=1200:    Typewriter completes (35 chars × 35ms avg)
+// t=3000:    Cycle repeats with instant message change
+
+// Only one state needed
+const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+
+// Typewriter hook handles its own animation internally
+const displayedText = useTypewriter(currentMessage, TYPING_SPEED_MS, prefersReducedMotion)
+```
+
+**Solution:** Instant message changes eliminate fade coordination entirely. MUCH simpler!
+
+### Technical Side Effect 2: Multiple Interval/Timeout Management - SIMPLIFIED ✅
+**Risk:** Managing TWO timers (not three anymore):
+- Message rotation interval (3000ms)
+- Typewriter interval (40ms per character, in hook)
+
+**Impact:** Memory leaks if not cleaned up properly
+**Severity:** MEDIUM - Simpler than before, but still needs proper cleanup
+
+**Prevention Strategy:**
+```javascript
+// ✅ GOOD: Simple cleanup (no fade timeouts needed!)
+useEffect(() => {
+  const rotationInterval = setInterval(() => {
+    setCurrentMessageIndex(prev => (prev + 1) % messages.length)
+  }, CYCLE_INTERVAL_MS)
+
+  return () => clearInterval(rotationInterval) // Simple!
+}, [messages.length])
+
+// In useTypewriter hook
+useEffect(() => {
+  const typeInterval = setInterval(...)
+  return () => clearInterval(typeInterval) // Critical!
+}, [text, speed, prefersReducedMotion])
+```
+
+**Solution:** Removed fade timeout management. Now just rotation interval + typewriter interval (in hook).
+
+### Technical Side Effect 3: State Race Conditions
+**Risk:** Message changes while typewriter is mid-animation
+**Example:** User sees "Adjusting your pow—" then suddenly "Channeling the Force..." starts typing
+**Severity:** MEDIUM - Visual glitch
+
+**Prevention Strategy:**
+```javascript
+// In useTypewriter hook
+useEffect(() => {
+  setDisplayedText('') // Reset on text change
+  if (!isActive) return
+
+  let currentIndex = 0
+  const interval = setInterval(() => {
+    currentIndex++
+    setDisplayedText(text.slice(0, currentIndex))
+
+    if (currentIndex >= text.length) {
+      clearInterval(interval)
+    }
+  }, speed)
+
+  return () => clearInterval(interval)
+}, [text, speed, isActive]) // Re-run when text changes
+```
+
+**Solution:** useEffect dependency on `text` ensures typewriter resets when message changes.
+
+### Technical Side Effect 4: Re-render Performance
+**Risk:** State update every 30-40ms for typewriter = ~25-33 re-renders per second
+**Impact:** Potential performance degradation on slow devices
+**Severity:** LOW - React is optimized for this
+
+**Analysis:**
+- Each character update is a single state change
+- Only the text node re-renders (React Virtual DOM optimization)
+- No expensive computations or API calls
+- Modern browsers handle this easily
+
+**Monitoring:**
+```javascript
+// Add performance check in development
+if (process.env.NODE_ENV === 'development') {
+  console.time('typewriter-render')
+  // Component render logic
+  console.timeEnd('typewriter-render')
+  // Should be <5ms per render
+}
+```
+
+**Solution:** No action needed unless profiling shows issues. React handles small text updates efficiently.
+
+### Technical Side Effect 5: Unicode & Emoji Character Handling
+**Risk:** Using `string.length` counts bytes, not visual characters
+**Example:** Emoji "👍" might count as 2 characters, causing timing issues
+**Severity:** LOW - Current messages don't use emoji
+
+**Problem Example:**
+```javascript
+'Hello 👍'.length // Returns 8 (not 7!)
+'Hello 👍'[6] // Returns � (broken character)
+```
+
+**Prevention Strategy:**
+```javascript
+// ❌ BAD: Doesn't handle Unicode properly
+const chars = text.length
+text.slice(0, index) // Can split emoji in half
+
+// ✅ GOOD: Proper Unicode handling
+const chars = Array.from(text) // Or [...text]
+const displayText = chars.slice(0, index).join('')
+```
+
+**Solution:** Use `Array.from(text)` or spread operator `[...text]` to properly handle Unicode characters.
+
+### Technical Side Effect 6: ~~Fade and Typewriter Coordination~~ ELIMINATED ✅
+**Status:** NO LONGER A CONCERN - No fades to coordinate!
+**Original Risk:** Typewriter starts before fade-in completes = double animation
+**Solution:** Instant message changes mean typewriter starts immediately on message change. No coordination needed!
+
+### Technical Side Effect 7: Message Change Mid-Typewriter - SIMPLIFIED ✅
+**Risk:** Rotation interval fires while typewriter is still typing
+**Example Timeline:**
+- t=0: Message 1 starts typing
+- t=1200: Typewriter completes (35 chars × 35ms avg)
+- t=3000: Rotation interval fires, instant message change, restart typing
+- Result: User sees full Message 1 and has 1800ms to read it ✅
+
+**Severity:** LOW - Simple to handle with instant message changes
+
+**Prevention Strategy:**
+```javascript
+// Calculate total time needed per cycle (SIMPLIFIED!)
+const TYPING_MS = 1200         // Max typing time (~35 chars × 35ms)
+const READING_MS = 1800        // Comfortable reading time
+const CYCLE_INTERVAL_MS = TYPING_MS + READING_MS // 3000ms ✅
+
+// Even simpler: Just use 3 seconds and don't worry about it
+const CYCLE_INTERVAL_MS = 3000
+// Longest message ~35 chars = 1400ms typing max
+// Gives 1600ms+ reading time for all messages ✅
+```
+
+**Solution:** 3000ms cycle with 35-40ms typing speed ensures all messages complete with reading time. When interval fires, instant swap to next message looks natural (like Claude Code).
+
+---
+
+## 📐 IMPLEMENTATION ARCHITECTURE (SIMPLIFIED!)
+
+### Recommended Approach: Custom Hook + Simple Component
+
+#### 1. Create `useTypewriter` Hook
+**File:** `/nextjs-app/src/hooks/useTypewriter.js`
+
+**Responsibilities:**
+- Character-by-character text reveal
+- Interval management and cleanup
+- Unicode character handling
+- Accessibility (reduced motion bypass)
+
+**Interface (SIMPLIFIED):**
+```javascript
+function useTypewriter(
+  text: string,                    // Text to type
+  speed: number = 40,              // Milliseconds per character
+  prefersReducedMotion: boolean = false  // Skip animation if true
+): string {
+  // Returns the currently displayed portion of text
+}
+```
+
+**Key Features:**
+- Resets when `text` changes (instant swap to new message)
+- Respects `prefersReducedMotion` (show full text immediately)
+- Proper cleanup on unmount
+- NO isActive prop needed - always active when text exists
+
+#### 2. Update Loader Component
+**File:** `/nextjs-app/src/components/ui/Loader.jsx`
+
+**REMOVED Fade Constants:**
+```javascript
+// ❌ DELETE THESE (no longer needed):
+// const FADE_DURATION_MS = 300
+// const [isVisible, setIsVisible] = useState(true)
+// const [isFullyVisible, setIsFullyVisible] = useState(false)
+```
+
+**NEW Timing Constants (SIMPLIFIED):**
+```javascript
+const TYPING_SPEED_MS = 35         // Milliseconds per character (fast like Claude Code)
+const CYCLE_INTERVAL_MS = 3000     // 3 seconds per message
+```
+
+**Hook Usage (SIMPLIFIED):**
+```javascript
+const displayedText = useTypewriter(
+  currentMessage,
+  TYPING_SPEED_MS,
+  prefersReducedMotion
+)
+```
+
+**JSX Change:**
+```javascript
+// Remove opacity transition classes
+// Before: {currentMessage}
+// After:  {displayedText}
+```
+
+**Message Rotation (SIMPLIFIED):**
+```javascript
+useEffect(() => {
+  if (prefersReducedMotion) return // Skip rotation if reduced motion
+
+  const intervalId = setInterval(() => {
+    setCurrentMessageIndex(prev => (prev + 1) % messages.length)
+    // Instant message change! No fade logic needed.
+  }, CYCLE_INTERVAL_MS)
+
+  return () => clearInterval(intervalId)
+}, [messages.length, prefersReducedMotion])
+```
+
+---
+
+## 🎯 UPDATED TIMING BREAKDOWN
+
+### Old Timing (V1 - Fade Only)
+```
+t=0     →  t=300   →  t=600   →  t=3000
+Fade out    Fade in    Display     Repeat
+(300ms)     (300ms)    (2400ms)
+
+Total cycle: 3000ms
+```
+
+### New Timing (V2 - Typewriter WITHOUT Fades) ✅ SIMPLIFIED!
+```
+t=0     →  t=1200  →  t=3000
+Instant     Typing      Reading    [Instant change]
+change      (1200ms)    (1800ms)
+
+Total cycle: 3000ms (unchanged!)
+```
+
+**Key Insights:**
+- Message changes instantly (no fade = no delay)
+- Typewriter starts immediately
+- More time for reading (1800ms vs 1200ms)
+- Simpler timing logic
+- Matches Claude Code's actual behavior exactly!
+
+---
+
+## 🔧 IMPLEMENTATION STEPS (SIMPLIFIED!)
+
+### Step 1: Create useTypewriter Hook
+```javascript
+// /nextjs-app/src/hooks/useTypewriter.js
+import { useState, useEffect } from 'react'
+
+export default function useTypewriter(
+  text,
+  speed = 35,  // Fast like Claude Code
+  prefersReducedMotion = false
+) {
+  const [displayedText, setDisplayedText] = useState('')
+
+  useEffect(() => {
+    // Respect accessibility preferences - show full text immediately
+    if (prefersReducedMotion) {
+      setDisplayedText(text)
+      return
+    }
+
+    // Reset and start typing from beginning
+    setDisplayedText('')
+    let currentIndex = 0
+    const chars = Array.from(text) // Proper Unicode handling
+
+    const interval = setInterval(() => {
+      currentIndex++
+      setDisplayedText(chars.slice(0, currentIndex).join(''))
+
+      if (currentIndex >= chars.length) {
+        clearInterval(interval)
+      }
+    }, speed)
+
+    return () => clearInterval(interval)
+  }, [text, speed, prefersReducedMotion])
+
+  return displayedText
+}
+```
+
+### Step 2: Update Loader Component
+
+**Add imports:**
+```javascript
+import useTypewriter from '@/hooks/useTypewriter'
+```
+
+**REMOVE fade-related constants and state:**
+```javascript
+// ❌ DELETE these lines:
+// const [isVisible, setIsVisible] = useState(true)
+// const [isFullyVisible, setIsFullyVisible] = useState(false)
+// All fade-in/fade-out effect code
+```
+
+**ADD new simplified constants:**
+```javascript
+const TYPING_SPEED_MS = 35        // Fast like Claude Code
+const CYCLE_INTERVAL_MS = 3000    // 3 seconds per message
+```
+
+**SIMPLIFY message rotation effect:**
+```javascript
+useEffect(() => {
+  if (prefersReducedMotion) {
+    // Respect user preference - no animation, show first message only
+    return
+  }
+
+  const intervalId = setInterval(() => {
+    setCurrentMessageIndex(prev => (prev + 1) % messages.length)
+    // Message changes instantly! Typewriter auto-restarts via hook.
+  }, CYCLE_INTERVAL_MS)
+
+  return () => clearInterval(intervalId)
+}, [messages.length, prefersReducedMotion])
+```
+
+**Use typewriter hook (SIMPLIFIED):**
+```javascript
+const displayedText = useTypewriter(
+  currentMessage,
+  TYPING_SPEED_MS,
+  prefersReducedMotion
+)
+```
+
+**Update JSX (REMOVE fade transition classes):**
+```javascript
+<p className="font-mono font-medium text-body text-text-primary text-center px-4 max-w-md mx-auto"
+   style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+  {displayedText}  {/* No opacity transitions! */}
+</p>
+```
+
+---
+
+## ✅ UPDATED TESTING CHECKLIST
+
+### Typewriter-Specific Tests
+- [ ] **Characters appear sequentially** (not all at once)
+- [ ] **Typing speed feels natural** (~30-40ms per character)
+- [ ] **All messages fully type** before fade-out starts
+- [ ] **Typewriter resets** when message changes
+- [ ] **No visual overlap** between fade-in and typewriter start
+- [ ] **Emojis/special characters** display correctly (if present)
+- [ ] **Long messages** (>30 chars) complete in time
+- [ ] **Short messages** (<10 chars) don't feel too fast
+- [ ] **Reduced motion:** No typewriter, instant text display
+- [ ] **Component unmount mid-typing:** No console errors
+- [ ] **Message changes mid-typing:** Cleanly resets to new message
+- [ ] **Performance:** No lag or stuttering during typing
+
+### Timing Verification
+- [ ] **Total cycle time:** Still ~3000ms (measure with stopwatch)
+- [ ] **Typing duration:** ~1000-1200ms for average message
+- [ ] **Reading time after typing:** At least 1000ms before fade-out
+
+---
+
+## 🚨 RISK ASSESSMENT
+
+| Risk | Severity | Likelihood | Mitigation Priority |
+|------|----------|------------|---------------------|
+| Double animation (fade + type) overwhelms users | HIGH | HIGH | CRITICAL - Fix in V1 |
+| Message times out mid-typewriter | HIGH | MEDIUM | CRITICAL - Adjust timings |
+| Memory leak from multiple intervals | HIGH | LOW | HIGH - Proper cleanup |
+| Accessibility (prefers-reduced-motion ignored) | CRITICAL | LOW | CRITICAL - Must implement |
+| Unicode emoji breaks typewriter | LOW | LOW | LOW - No emojis in V1 |
+| Performance issues from rapid re-renders | LOW | LOW | LOW - Monitor only |
+| User fatigue from constant typing | MEDIUM | MEDIUM | MEDIUM - Fast speed helps |
+
+---
+
+## 🎯 DEFINITION OF DONE (UPDATED)
+
+**Typewriter feature is complete when:**
+
+1. **Functionality**
+   - [ ] Characters appear sequentially at ~40ms intervals
+   - [ ] Typing starts AFTER fade-in completes (not during)
+   - [ ] All messages complete typing before fade-out
+   - [ ] Message changes reset typewriter animation
+   - [ ] No console errors during typing or transitions
+
+2. **Timing**
+   - [ ] Total cycle remains ~3000ms per message
+   - [ ] Typing takes ~1000-1200ms per message
+   - [ ] Users have at least 1000ms to read after typing completes
+
+3. **Accessibility**
+   - [ ] `prefers-reduced-motion` bypasses typewriter (instant text)
+   - [ ] No visual overlap between animations
+   - [ ] Text remains readable throughout typing
+
+4. **Code Quality**
+   - [ ] Typewriter logic encapsulated in custom hook
+   - [ ] All intervals/timeouts have cleanup functions
+   - [ ] Unicode characters handled correctly
+   - [ ] Clear timing constants and comments
+
+5. **Testing**
+   - [ ] All typewriter-specific tests pass
+   - [ ] No performance degradation detected
+   - [ ] Works on mobile and desktop
+   - [ ] Tested with reduced motion enabled
+
+---
+
+## 💡 KEY DESIGN DECISIONS (TYPEWRITER)
+
+### Decision 1: When to Start Typewriter
+**Options:**
+- A) Start during fade-in (overlapping animations)
+- B) Start after fade-in completes (sequential) ✅
+
+**Rationale:** Sequential prevents visual overload and respects accessibility guidelines. Users can focus on one animation at a time.
+
+### Decision 2: Typing Speed
+**Options:**
+- A) Very fast (20ms) - feels instant
+- B) Medium (40ms) - noticeable but not slow ✅
+- C) Slow (80ms) - traditional typewriter feel
+
+**Rationale:** 40ms is fast enough to prevent fatigue but slow enough to create the desired effect. Feels modern, not retro.
+
+### Decision 3: Variable vs. Fixed Speed
+**Options:**
+- A) Fixed speed for all messages ✅
+- B) Dynamic speed (normalize durations)
+- C) Min/max bounded speed
+
+**Rationale:** Fixed speed is simpler and feels more natural. Users expect consistent typing rhythm.
+
+### Decision 4: Progressive Reduction
+**Options:**
+- A) All messages use typewriter ✅
+- B) Only first 2 messages
+- C) Alternate messages
+
+**Rationale:** Consistency is better UX. Fast speed (40ms) prevents fatigue, so no need to reduce.
+
+### Decision 5: Implementation Pattern
+**Options:**
+- A) Inline in Loader component
+- B) Custom hook (useTypewriter) ✅
+- C) External library (typed.js)
+
+**Rationale:** Custom hook balances reusability with control. No external dependencies, easier to debug.
+
+---
+
+## 📊 SUCCESS CRITERIA (TYPEWRITER)
+
+**This enhancement is successful if:**
+
+1. **Engagement:** Users find the typewriter effect delightful (not annoying)
+2. **Timing:** Messages complete typing with enough time to read
+3. **Accessibility:** No motion sickness complaints, reduced motion works
+4. **Performance:** No lag or stuttering on mobile devices
+5. **Reliability:** No console errors, clean unmounting
+
+**Red flags (indicating failure):**
+- Users report frustration or annoyance
+- Messages cut off mid-typing
+- Performance issues on older devices
+- Accessibility complaints
+
+---
+
+## 🎬 IMPLEMENTATION TIMELINE (UPDATED)
+
+### Original: 3 hours
+### With Typewriter: 4.5 hours
+
+**Breakdown:**
+- Step 1: Create useTypewriter hook (45 minutes)
+- Step 2: Update Loader component timing (30 minutes)
+- Step 3: Coordinate fade + typewriter (30 minutes)
+- Step 4: Testing & timing adjustments (60 minutes)
+- Step 5: Accessibility verification (30 minutes)
+- Step 6: Polish & edge case handling (45 minutes)
+
+**Total: 4.5 hours** (1.5 hours additional for typewriter)
+
+---
+
 ## 📊 Success Metrics
 
 ### Qualitative

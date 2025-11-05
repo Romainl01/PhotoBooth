@@ -5,7 +5,7 @@
  * - Optional captured photo preview in background
  * - Semi-transparent dark background overlay
  * - Skeumorphic loading icon with yellow animated spinner
- * - Dynamic contextual loading messages that rotate based on filter
+ * - Dynamic contextual loading messages with typewriter effect (like Claude Code)
  *
  * Mobile: Covers camera preview area only, leaves buttons visible
  * Desktop: Full-screen coverage
@@ -21,11 +21,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { LOADING_MESSAGES, GENERIC_MESSAGES } from '@/constants/loadingMessages';
 import LoadingIcon from '../icons/LoadingIcon';
+import useTypewriter from '@/hooks/useTypewriter';
 
 // Timing constants (single source of truth)
-const FADE_DURATION_MS = 300;
-const MESSAGE_DISPLAY_MS = 2400;
-const CYCLE_INTERVAL_MS = MESSAGE_DISPLAY_MS + (FADE_DURATION_MS * 2); // 3000ms total
+const TYPING_SPEED_MS = 70;      // Deliberate typing speed for better readability (70ms per character)
+const CYCLE_INTERVAL_MS = 4500;  // 4.5 seconds per message (instant change + typing + reading)
 
 /**
  * Shuffles an array using Fisher-Yates algorithm
@@ -45,7 +45,6 @@ function shuffleArray(array) {
 
 export default function Loader({ filterName, imageUrl = null }) {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   // Memoize message lookup to avoid recalculation on every render
@@ -67,36 +66,27 @@ export default function Loader({ filterName, imageUrl = null }) {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Message rotation logic with shuffling
+  // Simplified message rotation logic (instant message changes, no fade animations)
   useEffect(() => {
     if (prefersReducedMotion) {
       // Respect user preference - no animation, show first message only
       return;
     }
 
-    setIsVisible(true);
-
     const intervalId = setInterval(() => {
-      // Fade out current message
-      setIsVisible(false);
+      setCurrentMessageIndex(prev => {
+        const nextIndex = prev + 1;
 
-      // After fade-out completes, change message and fade in
-      setTimeout(() => {
-        setCurrentMessageIndex(prev => {
-          const nextIndex = prev + 1;
+        // If we've reached the end of shuffled messages, reshuffle and start over
+        if (nextIndex >= shuffledMessages.length) {
+          setShuffledMessages(shuffleArray(messages));
+          return 0; // Start from beginning of new shuffled array
+        }
 
-          // If we've reached the end of shuffled messages, reshuffle and start over
-          if (nextIndex >= shuffledMessages.length) {
-            setShuffledMessages(shuffleArray(messages));
-            return 0; // Start from beginning of new shuffled array
-          }
-
-          return nextIndex;
-        });
-        setIsVisible(true);
-      }, FADE_DURATION_MS);
-
-    }, CYCLE_INTERVAL_MS); // 3600ms = 3000ms display + 600ms transitions
+        return nextIndex;
+      });
+      // Message changes instantly! Typewriter hook auto-restarts via useEffect dependency.
+    }, CYCLE_INTERVAL_MS); // 4500ms = typing time + reading time
 
     return () => clearInterval(intervalId);
   }, [shuffledMessages.length, messages, prefersReducedMotion]);
@@ -105,10 +95,17 @@ export default function Loader({ filterName, imageUrl = null }) {
   useEffect(() => {
     setCurrentMessageIndex(0);
     setShuffledMessages(shuffleArray(messages));
-    setIsVisible(true);
   }, [filterName, messages]);
 
   const currentMessage = shuffledMessages[currentMessageIndex];
+
+  // Use typewriter effect hook (handles character-by-character reveal)
+  const displayedText = useTypewriter(
+    currentMessage,
+    TYPING_SPEED_MS,
+    prefersReducedMotion,
+    true  // Show cursor while typing
+  );
 
   return (
     <>
@@ -133,18 +130,15 @@ export default function Loader({ filterName, imageUrl = null }) {
               {/* Skeumorphic loading icon */}
               <LoadingIcon className="w-[88px] h-[88px]" />
 
-              {/* Dynamic loading message with accessibility */}
+              {/* Dynamic loading message with typewriter effect and accessibility */}
               <div role="status" aria-live="polite" aria-atomic="true">
                 <p
-                  className={`font-mono font-medium text-body text-text-primary text-center px-4 max-w-md mx-auto transition-opacity ease-in-out ${
-                    prefersReducedMotion ? '' : (isVisible ? 'opacity-100' : 'opacity-0')
-                  }`}
+                  className="font-mono font-medium text-body text-text-primary text-center px-4 max-w-md mx-auto"
                   style={{
-                    transitionDuration: `${FADE_DURATION_MS}ms`,
                     textShadow: '0 1px 3px rgba(0,0,0,0.8)', // Improves readability on light photos
                   }}
                 >
-                  {currentMessage}
+                  {displayedText}
                 </p>
               </div>
             </div>
