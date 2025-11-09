@@ -2,67 +2,24 @@
  * CaptureIcon Component
  *
  * Custom camera capture button icon with:
- * - Skeumorphic double-border design
- * - Linear gradient stroke
+ * - Uses SkeuomorphicCircleButton base component
  * - Camera or no-camera icon (based on iconType prop)
  * - Red recording indicator with glow
  */
 
 'use client';
 
+import SkeuomorphicCircleButton from '../ui/SkeuomorphicCircleButton';
+
 export default function CaptureIcon({ className = '', iconType = 'camera' }) {
   return (
-    <svg
-      viewBox="0 0 88 88"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <SkeuomorphicCircleButton
+      diameter={88}
+      gradientId="capture-gradient"
+      showRedLight={true}
+      redLightFilterId="red-glow"
       className={className}
-      style={{ display: 'block' }}
     >
-      <defs>
-        {/* Linear gradient for border */}
-        <linearGradient
-          id="capture-gradient"
-          x1="44"
-          y1="4"
-          x2="44"
-          y2="84"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#858484" />
-          <stop offset="1" stopColor="#000000" />
-        </linearGradient>
-
-        {/* Glow filter for red light */}
-        <filter
-          id="red-glow"
-          x="33"
-          y="53"
-          width="22"
-          height="22"
-          filterUnits="userSpaceOnUse"
-          colorInterpolationFilters="sRGB"
-        >
-          <feFlood floodOpacity="0" result="BackgroundImageFix" />
-          <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-          <feGaussianBlur stdDeviation="2.5" result="effect1_foregroundBlur" />
-        </filter>
-      </defs>
-
-      {/* Outer black circle */}
-      <circle cx="44" cy="44" r="44" fill="#000000" />
-
-      {/* Inner circle with gradient border */}
-      <circle cx="44" cy="44" r="40" fill="#232323" />
-      <circle
-        cx="44"
-        cy="44"
-        r="40"
-        stroke="url(#capture-gradient)"
-        strokeOpacity="0.6"
-        strokeWidth="2"
-        fill="none"
-      />
 
       {/* Icon - Camera or No-Camera based on iconType */}
       {iconType === 'camera' ? (
@@ -87,12 +44,6 @@ export default function CaptureIcon({ className = '', iconType = 'camera' }) {
           <path d="M3 5L38 36" stroke="white" strokeWidth="3" strokeLinecap="round"/>
         </g>
       )}
-
-      {/* Red recording light with glow */}
-      <g opacity="0.5" filter="url(#red-glow)">
-        <circle cx="44" cy="64" r="6" fill="#CD0E0E" />
-      </g>
-      <circle cx="44" cy="64" r="3" fill="#FF0000" />
-    </svg>
+    </SkeuomorphicCircleButton>
   );
 }
