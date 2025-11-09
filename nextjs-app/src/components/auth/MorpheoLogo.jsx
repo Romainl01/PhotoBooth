@@ -21,7 +21,10 @@ export default function MorpheoLogo({ showRedDot = true }) {
       </div>
 
       {/* Morpheo Text */}
-      <h1 className="font-['Crimson_Pro'] font-bold text-[40px] leading-[22px] text-black">
+      <h1
+        className="font-bold text-[40px] leading-[48px] text-black"
+        style={{ fontFamily: 'var(--font-crimson-pro)' }}
+      >
         Morpheo
       </h1>
     </div>

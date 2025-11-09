@@ -84,7 +84,7 @@ export default function SignInLayout() {
 
         {/* Showcase TV Component */}
         <ShowcaseTV
-          imageSrc="/showcase/hero-photo.png"
+          imageSrc="/showcase/hero-photo.jpg"
           showControls={false}
           alt="AI-generated showcase photo - Morpheo capabilities"
         />
