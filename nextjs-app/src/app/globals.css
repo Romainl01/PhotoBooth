@@ -2,10 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix mobile white background gaps */
+html {
+  background-color: #242424;
+  height: 100%;
+  height: -webkit-fill-available; /* Safari support */
+}
+
 body {
   margin: 0;
   font-family: "IBM Plex Mono", monospace;
   background-color: #242424;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh; /* Fallback for older browsers */
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
 }
