@@ -1,6 +1,7 @@
 'use client'
 
 import SkeuomorphicRectButton from '@/components/ui/SkeuomorphicRectButton'
+import CaptureIcon from '@/components/icons/CaptureIcon'
 
 /**
  * PaywallModal - Blocks camera when user has 0 credits
@@ -27,9 +28,9 @@ import SkeuomorphicRectButton from '@/components/ui/SkeuomorphicRectButton'
 export default function PaywallModal({ onClose, onBuyCredits }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop with blur - matches Figma white overlay */}
+      {/* Backdrop with blur - dark overlay to dim camera screen */}
       <div
-        className="absolute inset-0 bg-white/90 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
         aria-label="Close modal"
       />
@@ -42,27 +43,9 @@ export default function PaywallModal({ onClose, onBuyCredits }) {
         }}
       >
         <div className="flex flex-col items-center gap-8 text-center">
-          {/* Camera blocked icon - matches Figma circular icon with red dot */}
-          <div className="relative flex items-center justify-center">
-            <div
-              className="w-[88px] h-[88px] rounded-full bg-[#333333] flex items-center justify-center shadow-lg"
-              style={{
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
-              }}
-            >
-              {/* Camera blocked emoji */}
-              <span className="text-5xl select-none" role="img" aria-label="Camera blocked">
-                📷🚫
-              </span>
-            </div>
-
-            {/* Red indicator dot - bottom right */}
-            <div
-              className="absolute bottom-0 right-0 w-3 h-3 bg-red-500 rounded-full"
-              style={{
-                boxShadow: '0 0 8px rgba(255, 0, 0, 0.6)',
-              }}
-            />
+          {/* Camera blocked icon - uses same icon as CameraAccessError */}
+          <div className="w-[88px] h-[88px]">
+            <CaptureIcon className="w-full h-full" iconType="no-camera" />
           </div>
 
           {/* Copy - matches Figma text styles */}
