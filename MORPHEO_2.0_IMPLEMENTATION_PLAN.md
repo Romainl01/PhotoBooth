@@ -1,14 +1,24 @@
 # Morpheo 2.0 Implementation Plan
 
+## 🎯 Implementation Status
+
+| Phase | Status | Completion Date | Notes |
+|-------|--------|-----------------|-------|
+| **Phase 1: Authentication** | ✅ Complete | 2025-01 | Google OAuth, middleware, sign-in UI |
+| **Phase 2A: Credits & UI** | 🚧 In Progress | - | Database, context, UI components (no Stripe) |
+| **Phase 2B: Stripe Integration** | ⏳ Pending | - | Payment flow, webhooks, reconciliation |
+| **Phase 3: Image Storage** | ⏳ Pending | - | Supabase storage, cleanup cron |
+| **Phase 4: Polish** | ⏳ Pending | - | Error handling, monitoring, testing |
+
 ## Overview
 Transform Morpheo from stateless photo booth → authenticated SaaS with credits-based monetization.
 
 **Core V2 Features:**
-- Google SSO authentication (Supabase)
-- Temporary image storage (1-hour TTL)
+- ✅ Google SSO authentication (Supabase)
+- 🚧 Credits-based paywall
+- ⏳ Temporary image storage (1-hour TTL)
 - Free tier: 5 images lifetime
-- Credits-based paywall
-- Automated image cleanup
+- ⏳ Automated image cleanup
 
 ---
 
@@ -136,50 +146,91 @@ $$ LANGUAGE SQL STABLE;
 
 ---
 
-### Phase 2: Credits & Paywall (Week 2)
-**Goal:** Track usage, block at 0 credits, show paywall.
+### Phase 2A: Credits System & UI (Week 2) ✅ **DECIDED: No Stripe yet**
+**Goal:** Track usage, block at 0 credits, show paywall (mock payment for now).
 
-**Recommended Pre-Phase Setup:**
-- **Install Supabase MCP Server** (optional but helpful)
-  - Enables AI assistant to auto-generate TypeScript types from schema
-  - Allows real-time database queries for debugging
-  - Reduces manual copy-paste of schema definitions
-  - See [Supabase MCP docs](https://supabase.com/docs/guides/getting-started/mcp)
-  - Token cost: ~500-1000 tokens overhead, but saves tokens on schema iterations
+**Implementation Approach:**
+- Build full credits system WITHOUT Stripe integration
+- Mock "Buy Credits" flow (button shows placeholder/coming soon)
+- Focus on atomic credit deduction and UI polish
+- Add Stripe in Phase 2B once core flow is validated
 
-1. **Credits Logic**
-   - Add credits display in UI header
-   - Check credits before API call in `/api/generate-headshot`
-   - Deduct 1 credit on successful generation
-   - Log transaction in `credit_transactions`
+**Key Decisions Made:**
+- ✅ **State Management:** React Context (native, zero dependencies)
+- ✅ **Watermarks:** Keep for ALL users (free + paid) for branding
+- ✅ **Contact Button:** Links to LinkedIn (already implemented)
+- ⏳ **Credit Pricing:** TBD when implementing Stripe
 
-2. **Usage Stats Tracking** (NEW - for sign-in page)
-   - Create `generation_stats` table (tracks all API requests)
-   - Update `/api/generate-headshot` to log every generation attempt
-   - Log user_id, filter_name, success/failure, timestamp
-   - Create Postgres function `get_weekly_photo_count()` for fast queries
-   - Update sign-in page to fetch weekly count (replaces hardcoded "1,576")
-   - Cache stats query (5-minute TTL) to reduce database load
+1. **Database Schema**
+   - `profiles` table with `credits` column (default 5)
+   - `credit_transactions` table for audit log
+   - Database trigger to auto-create profile on signup
+   - Atomic `deduct_credit()` RPC function with race condition protection
 
-3. **Paywall UI**
-   - Modal/screen when credits = 0
-   - Display credit packages (e.g., 10 for $5, 50 for $20, 100 for $35)
-   - "Buy Credits" button → redirect to Stripe Checkout
+2. **Global State Management**
+   - Create `UserContext` with React Context API
+   - Manages: user session, profile data, credit count
+   - Provides `refreshCredits()` for manual refresh after purchases
+   - Integrates with Supabase auth listener for real-time updates
 
-4. **Stripe Integration**
+3. **UI Components**
+   - **CreditBadge:** Floating tooltip with liquid glass effect
+     - Color-coded: Green (>10), Yellow (3-10), Red (≤3)
+     - Text: "5 free images left" vs "X credits left"
+   - **PaywallModal:** Full-screen overlay when credits = 0
+     - Copy: "Don't stop now! Your best picture might be next"
+     - CTA: "Add credits" (mock for now)
+   - **SettingsDrawer:** Slide-up panel with user info
+     - Sections: User (credits + buy button), About, Account (logout)
+
+4. **API Protection**
+   - Add auth check to `/api/generate-headshot`
+   - Check credits BEFORE calling Gemini (save API costs)
+   - Deduct credit AFTER successful generation (atomic)
+   - Return 402 status code when insufficient credits
+   - Log all transactions for reconciliation
+
+5. **Camera Screen Integration**
+   - Display CreditBadge in top-right corner
+   - Block capture if credits < 1
+   - Show PaywallModal on insufficient credits
+   - Settings icon opens SettingsDrawer
+
+**Gotchas:**
+- ⚠️ Race condition: Multiple rapid captures → use atomic DB function
+- ⚠️ Deduct AFTER generation (not before) to avoid charging on failures
+- ⚠️ Profile not loaded yet → add null checks everywhere
+- ⚠️ Credit fraud: Database constraint `CHECK (credits >= 0)`
+
+---
+
+### Phase 2B: Stripe Integration (Week 3) ⏳ **DEFERRED**
+**Goal:** Real payment flow with credit purchases.
+
+**Blocked Until:** Phase 2A complete + credit pricing finalized
+
+1. **Stripe Setup**
    - Create Stripe account, get API keys
    - Create Products & Prices in Stripe Dashboard
    - Install `stripe` package
+   - Finalize credit packages (e.g., 10 for $2.99, 50 for $9.99, 100 for $14.99)
+
+2. **Payment Flow**
    - Create `/api/checkout` endpoint → Stripe Checkout Session
    - Create `/api/webhooks/stripe` for payment confirmation
    - Verify webhook signature, add credits on `checkout.session.completed`
+   - Update "Buy Credits" buttons to redirect to checkout
+
+3. **Reconciliation**
+   - Implement webhook retry logic
+   - Manual reconciliation UI for failed webhooks
+   - Store `stripe_payment_id` in credit_transactions
+   - Monitor Stripe dashboard vs database credits
 
 **Gotchas:**
-- ⚠️ Race condition: User generates while webhook pending → use optimistic locking
-- ⚠️ Webhook failures: Implement retry logic + manual reconciliation UI
+- ⚠️ Webhook failures: Implement idempotency keys
 - ⚠️ Stripe test mode: Use test cards, separate test/prod keys
-- ⚠️ Credits must be atomic transactions (use DB transactions)
-- ⚠️ Users could spam API before credit deduction → add rate limiting (Upstash Redis)
+- ⚠️ Tax compliance: Enable Stripe Tax or use Lemon Squeezy
 
 ---
 
@@ -414,13 +465,19 @@ CRON_SECRET=xxx  # Secure cron endpoint
 
 ---
 
-## Questions to Answer Before Starting
+## Decisions Log
 
-1. **Credit pricing final?** (Adjust packages before Stripe setup)
-2. **Watermark for paid users?** (Keep or remove?)
-3. **Refund policy?** (None, or 24h unused credits?)
-4. **Image expiry flexible?** (Fixed 1h or tiered: free=1h, paid=24h?)
-5. **Email notifications?** (Expiry warnings? Purchase confirmations?)
+### ✅ Answered (Phase 2A)
+1. **Watermark for paid users?** → **KEEP for all users** (branding strategy)
+2. **State management library?** → **React Context** (native, zero dependencies)
+3. **Stripe integration timing?** → **Phase 2B** (after core credits flow validated)
+4. **Contact button destination?** → **LinkedIn** (already implemented)
+
+### ⏳ Pending (Phase 2B/3/4)
+1. **Credit pricing final?** → Decide before Stripe setup (e.g., 10/$2.99, 50/$9.99, 100/$14.99)
+2. **Refund policy?** → None, or 24h unused credits?
+3. **Image expiry flexible?** → Fixed 1h or tiered: free=1h, paid=24h?
+4. **Email notifications?** → Expiry warnings? Purchase confirmations?
 
 ---
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useUser } from '@/contexts/UserContext'
 import CameraScreen from '@/components/screens/CameraScreen'
 import ResultScreen from '@/components/screens/ResultScreen'
 import CameraAccessError from '@/components/screens/CameraAccessError'
@@ -23,6 +24,9 @@ const SCREENS = {
 }
 
 export default function Home() {
+  // Phase 2A: User context for credit management
+  const { refreshCredits } = useUser()
+
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState(SCREENS.CAMERA)
 
@@ -218,9 +222,29 @@ export default function Home() {
 
       const data = await response.json()
 
+      // Phase 2A: Handle 402 Payment Required (insufficient credits)
+      if (response.status === 402) {
+        console.log('[Generate] Insufficient credits - returning to camera with paywall')
+        setCurrentScreen(SCREENS.CAMERA)
+        // Paywall will be shown by CameraScreen component
+        return
+      }
+
+      // Phase 2A: Handle 401 Unauthorized (should not happen with middleware, but safe to check)
+      if (response.status === 401) {
+        console.error('[Generate] Unauthorized - redirecting to sign-in')
+        window.location.href = '/sign-in'
+        return
+      }
+
       if (data.success && data.image) {
         setGeneratedImage(data.image)
         setCurrentScreen(SCREENS.RESULT)
+
+        // Phase 2A: Refresh credits after successful generation
+        // This updates the UI to show new credit count
+        console.log('[Generate] Success - refreshing credits')
+        await refreshCredits()
       } else {
         console.error('Generation failed:', data.error)
         setCurrentScreen(SCREENS.API_ERROR)

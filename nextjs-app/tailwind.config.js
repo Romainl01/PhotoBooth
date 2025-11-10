@@ -52,6 +52,8 @@ module.exports = {
       fontFamily: {
         mono: ['var(--font-ibm-plex-mono)', 'monospace'],
         'dm-mono': ['var(--font-dm-mono)', 'monospace'],
+        'ibm-plex-mono': ['var(--font-ibm-plex-mono)', 'monospace'],
+        'crimson-pro': ['var(--font-crimson-pro)', 'serif'],
       },
       fontSize: {
         'heading': '24px',

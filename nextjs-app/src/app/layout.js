@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono, DM_Mono, IBM_Plex_Mono, Crimson_Pro } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { UserProvider } from "@/contexts/UserContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -72,7 +73,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${dmMono.variable} ${ibmPlexMono.variable} ${crimsonPro.variable} antialiased`}
       >
-        {children}
+        <UserProvider>
+          {children}
+        </UserProvider>
         <Analytics />
       </body>
     </html>

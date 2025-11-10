@@ -12,18 +12,49 @@
  * - Centered vertical stack with 24px gaps
  * - Light gray background (#e3e3e3)
  * - 32px horizontal padding
+ *
+ * Authentication:
+ * - Google OAuth via Supabase
+ * - Redirects to /auth/callback after consent
+ * - Session managed via cookies
  */
 
 'use client';
 
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import MorpheoLogo from './MorpheoLogo';
 import ShowcaseTV from './ShowcaseTV';
 import GoogleButton from './GoogleButton';
 
 export default function SignInLayout() {
-  // TODO Phase 2: Replace with actual OAuth handler
-  const handleGoogleSignIn = () => {
-    console.log('Phase 2: Trigger Google OAuth');
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        console.error('OAuth error:', error.message);
+        alert('Failed to sign in with Google. Please try again.');
+        setIsLoading(false);
+      }
+
+      // If successful, user will be redirected to Google
+      // No need to reset loading state as page will navigate away
+    } catch (err) {
+      console.error('Unexpected error during sign-in:', err);
+      alert('An unexpected error occurred. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -82,15 +113,13 @@ export default function SignInLayout() {
           </p>
         </div>
 
-        {/* Showcase TV Component */}
+        {/* Showcase TV Component with embedded Google Button */}
         <ShowcaseTV
           imageSrc="/showcase/hero-photo.jpg"
-          showControls={false}
           alt="AI-generated showcase photo - Morpheo capabilities"
-        />
-
-        {/* Continue with Google Button */}
-        <GoogleButton onClick={handleGoogleSignIn} />
+        >
+          <GoogleButton onClick={handleGoogleSignIn} disabled={isLoading} />
+        </ShowcaseTV>
       </div>
     </main>
   );

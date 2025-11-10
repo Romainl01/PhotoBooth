@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { STYLE_PROMPTS } from '@/constants/stylePrompts';
+import { createClient } from '@/lib/supabase/server';
 
 // Initialize Google GenAI
 const ai = new GoogleGenAI({
@@ -9,6 +10,54 @@ const ai = new GoogleGenAI({
 
 export async function POST(request) {
   try {
+    // ==================== PHASE 2A: AUTH & CREDIT CHECKS ====================
+
+    // 1. Authenticate user
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error('[Auth Check] Unauthorized:', authError?.message);
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in to generate images.' },
+        { status: 401 }
+      );
+    }
+
+    console.log(`[Auth Check] User authenticated: ${user.id}`);
+
+    // 2. Check credits BEFORE generation (saves Gemini API costs)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('credits')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('[Credit Check] Profile not found:', profileError?.message);
+      return NextResponse.json(
+        { error: 'User profile not found. Please contact support.' },
+        { status: 404 }
+      );
+    }
+
+    console.log(`[Credit Check] User has ${profile.credits} credits`);
+
+    // 3. Block if insufficient credits (402 = Payment Required)
+    if (profile.credits < 1) {
+      console.log('[Credit Check] Insufficient credits - blocking generation');
+      return NextResponse.json(
+        {
+          error: 'Insufficient credits',
+          needsCredits: true,
+          message: 'You need credits to generate images. Please purchase more credits to continue.'
+        },
+        { status: 402 } // 402 Payment Required - signals client to show paywall
+      );
+    }
+
+    // ==================== EXISTING GENERATION LOGIC ====================
+
     const { image, style } = await request.json();
 
     if (!image || !style) {
@@ -84,6 +133,29 @@ export async function POST(request) {
 
     if (!generatedImageData) {
       throw new Error('No image data in response');
+    }
+
+    // ==================== PHASE 2A: DEDUCT CREDIT ====================
+
+    // Deduct credit AFTER successful generation (atomic operation)
+    console.log(`[Credit Deduction] Deducting 1 credit from user ${user.id}`);
+
+    const { error: deductError } = await supabase.rpc('deduct_credit', {
+      p_user_id: user.id,
+      p_filter_name: style
+    });
+
+    if (deductError) {
+      console.error('[Credit Deduction] Failed to deduct credit:', deductError);
+      // Don't fail the request - user got their image
+      // Log for manual reconciliation
+      console.error('[CRITICAL] Credit deduction failed but image was generated:', {
+        userId: user.id,
+        style: style,
+        error: deductError.message
+      });
+    } else {
+      console.log(`[Credit Deduction] Successfully deducted credit from user ${user.id}`);
     }
 
     // Return the generated image as base64
