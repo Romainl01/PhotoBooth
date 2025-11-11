@@ -25,11 +25,23 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import MorpheoLogo from './MorpheoLogo';
 import ShowcaseTV from './ShowcaseTV';
+import VHSPlayback from './VHSPlayback';
 import GoogleButton from './GoogleButton';
 
 export default function SignInLayout() {
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
+
+  // Showcase images
+  const showcaseImages = [
+    '/showcase/mobile/Mobile Kill Bill Emma.png',
+    '/showcase/mobile/Mobile Kill Bill Thomas.png',
+    '/showcase/mobile/Mobile Lord Romain.png',
+    '/showcase/mobile/Mobile Matrix Romain.png',
+    '/showcase/mobile/Mobile Star Wars Thomas.png',
+    '/showcase/mobile/Mobile Star Wars Valentin.png',
+    '/showcase/mobile/Mobile Zombie Samy.png',
+  ];
 
   const handleGoogleSignIn = async () => {
     try {
@@ -113,12 +125,13 @@ export default function SignInLayout() {
           </p>
         </div>
 
-        {/* Showcase TV Component with embedded Google Button */}
+        {/* VHS Playback in TV Frame */}
         <ShowcaseTV
-          imageSrc="/showcase/hero-photo.jpg"
-          alt="AI-generated showcase photo - Morpheo capabilities"
+          buttonContent={
+            <GoogleButton onClick={handleGoogleSignIn} disabled={isLoading} />
+          }
         >
-          <GoogleButton onClick={handleGoogleSignIn} disabled={isLoading} />
+          <VHSPlayback images={showcaseImages} />
         </ShowcaseTV>
       </div>
     </main>

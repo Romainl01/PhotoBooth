@@ -6,13 +6,14 @@
  * - Dark rounded container with layered shadows (mimics physical TV)
  * - Inner shadow frame for depth effect
  * - 1px black inner border with glass reflection effect
- * - Static photo display (Phase 1)
- * - Supports embedded CTA buttons (via children prop)
+ * - Accepts dynamic content (VHSPlayback, etc.) or static image
+ * - Supports embedded CTA buttons (via buttonContent prop)
  *
  * Props:
- * - imageSrc: string (required) - Path to showcase photo
+ * - children: ReactNode - Dynamic content to display in TV screen (e.g., VHSPlayback)
+ * - imageSrc: string (optional) - Fallback static image if no children provided
  * - alt: string - Image alt text for accessibility
- * - children: ReactNode - Content to overlay on photo (e.g., buttons)
+ * - buttonContent: ReactNode - Button to display in bottom bar (e.g., GoogleButton)
  */
 
 'use client';
@@ -20,9 +21,10 @@
 import Image from 'next/image';
 
 export default function ShowcaseTV({
-  imageSrc = '/showcase/hero-photo.png',
-  alt = 'AI-generated photo showcasing Morpheo\'s capabilities',
   children,
+  imageSrc,
+  alt = 'AI-generated photo showcasing Morpheo\'s capabilities',
+  buttonContent,
 }) {
   return (
     <div
@@ -36,7 +38,7 @@ export default function ShowcaseTV({
     >
       {/* Camera POV Frame */}
       <div className="p-[12px] rounded-[20px]">
-        {/* Shadow Frame - Contains photo with inner border + shadow effects */}
+        {/* Shadow Frame - Contains photo/content with inner border + shadow effects */}
         <div
           className="
             relative
@@ -48,15 +50,19 @@ export default function ShowcaseTV({
             w-full
           "
         >
-          {/* Showcase Photo */}
-          <Image
-            src={imageSrc}
-            alt={alt}
-            fill
-            className="object-cover"
-            priority
-            sizes="(max-width: 768px) 338px, 800px"
-          />
+          {/* Dynamic Content (VHSPlayback, etc.) or Static Image */}
+          {children ? (
+            children
+          ) : imageSrc ? (
+            <Image
+              src={imageSrc}
+              alt={alt}
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 768px) 338px, 800px"
+            />
+          ) : null}
 
           {/* Layered Shadow Effects for Depth */}
           <div className="
@@ -73,9 +79,9 @@ export default function ShowcaseTV({
       </div>
 
       {/* Button Bar (bottom section on gray background) */}
-      {children && (
+      {buttonContent && (
         <div className="flex items-center justify-center w-full pb-[16px] px-[32px]">
-          {children}
+          {buttonContent}
         </div>
       )}
     </div>
