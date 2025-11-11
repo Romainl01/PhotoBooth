@@ -1,31 +1,95 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import SkeuomorphicRectButton from '@/components/ui/SkeuomorphicRectButton'
 import CaptureIcon from '@/components/icons/CaptureIcon'
 
 /**
  * PaywallModal - Blocks camera when user has 0 credits
  *
+ * Phase 2B Update: Now displays 3 credit packages with Stripe checkout
+ *
  * Design:
  * - Full-screen white/light backdrop with blur
  * - Centered dark card with rounded corners
  * - Camera blocked icon (📷🚫) with red indicator
  * - Motivational copy: "Don't stop now! Your best picture might be next"
- * - CTA button: "Add credits"
+ * - 3 credit package buttons: Starter (10), Creator (30), Pro (100)
  *
  * Props:
  * - onClose: function - Close modal (optional, for backdrop click)
- * - onBuyCredits: function - Navigate to purchase flow
  *
- * Usage:
- * {showPaywall && (
- *   <PaywallModal
- *     onClose={() => setShowPaywall(false)}
- *     onBuyCredits={() => router.push('/credits')}
- *   />
- * )}
+ * Flow:
+ * 1. User clicks a credit package button
+ * 2. Modal calls /api/checkout with price_id
+ * 3. API returns Stripe checkout URL
+ * 4. User redirects to Stripe payment page
+ * 5. After payment, Stripe webhook adds credits
+ * 6. User redirects back to app
  */
-export default function PaywallModal({ onClose, onBuyCredits }) {
+export default function PaywallModal({ onClose }) {
+  const [packages, setPackages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [processingPackageId, setProcessingPackageId] = useState(null)
+
+  // Fetch credit packages from database
+  useEffect(() => {
+    async function fetchPackages() {
+      try {
+        const response = await fetch('/api/credit-packages')
+        if (!response.ok) throw new Error('Failed to fetch packages')
+        const data = await response.json()
+        setPackages(data.packages)
+      } catch (error) {
+        console.error('[PaywallModal] Error fetching packages:', error)
+        // Fallback to hardcoded packages if API fails
+        setPackages([
+          { id: '1', name: 'Starter', emoji: '💫', credits: 10, price_cents: 299, currency: 'EUR', stripe_price_id: 'price_1SS4E8K9cHL77TyOtdNpKgCr' },
+          { id: '2', name: 'Creator', emoji: '🎨', credits: 30, price_cents: 699, currency: 'EUR', stripe_price_id: 'price_1SS4FjK9cHL77TyOJNL1mVLc' },
+          { id: '3', name: 'Pro', emoji: '🏆', credits: 100, price_cents: 1799, currency: 'EUR', stripe_price_id: 'price_1SS4EtK9cHL77TyOS3mtMaHi' },
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPackages()
+  }, [])
+
+  // Handle credit package purchase
+  async function handlePurchase(priceId, packageId) {
+    try {
+      setProcessingPackageId(packageId)
+
+      // Call checkout API to create Stripe session
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to create checkout session')
+      }
+
+      const { url } = await response.json()
+
+      // Redirect to Stripe Checkout
+      window.location.href = url
+    } catch (error) {
+      console.error('[PaywallModal] Checkout error:', error)
+      alert(`Error: ${error.message}`)
+      setProcessingPackageId(null)
+    }
+  }
+
+  // Format price for display
+  function formatPrice(cents, currency) {
+    const amount = (cents / 100).toFixed(2)
+    const symbol = currency === 'EUR' ? '€' : '$'
+    return `${amount}${symbol}`
+  }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop with blur - dark overlay to dim camera screen */}
@@ -43,12 +107,12 @@ export default function PaywallModal({ onClose, onBuyCredits }) {
         }}
       >
         <div className="flex flex-col items-center gap-8 text-center">
-          {/* Camera blocked icon - uses same icon as CameraAccessError */}
+          {/* Camera blocked icon */}
           <div className="w-[88px] h-[88px]">
             <CaptureIcon className="w-full h-full" iconType="no-camera" />
           </div>
 
-          {/* Copy - matches Figma text styles */}
+          {/* Copy */}
           <div className="flex flex-col gap-6 w-full">
             <h2 className="font-ibm-plex-mono font-bold text-2xl text-white leading-snug">
               Don't stop now!
@@ -58,18 +122,28 @@ export default function PaywallModal({ onClose, onBuyCredits }) {
             </p>
           </div>
 
-          {/* CTA Button */}
-          <SkeuomorphicRectButton
-            width={318} // ~350px card - 32px padding
-            height={56}
-            gradientId="paywall-button-gradient"
-            onClick={onBuyCredits}
-            className="w-full"
-          >
-            <span className="font-ibm-plex-mono font-medium text-base text-white">
-              Add credits
-            </span>
-          </SkeuomorphicRectButton>
+          {/* Credit Package Buttons */}
+          <div className="flex flex-col gap-4 w-full">
+            {loading ? (
+              <div className="text-white font-ibm-plex-mono text-sm">Loading packages...</div>
+            ) : (
+              packages.map((pkg, index) => (
+                <SkeuomorphicRectButton
+                  key={pkg.id || index}
+                  width={318}
+                  height={56}
+                  gradientId={`paywall-package-${index}`}
+                  onClick={() => handlePurchase(pkg.stripe_price_id, pkg.id)}
+                  disabled={processingPackageId === pkg.id}
+                  className="w-full"
+                >
+                  <span className="font-ibm-plex-mono font-medium text-base text-white">
+                    {pkg.emoji} {pkg.name}: {pkg.credits} images - {formatPrice(pkg.price_cents, pkg.currency)}
+                  </span>
+                </SkeuomorphicRectButton>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

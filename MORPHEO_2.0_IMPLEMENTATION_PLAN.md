@@ -5,8 +5,9 @@
 | Phase | Status | Completion Date | Notes |
 |-------|--------|-----------------|-------|
 | **Phase 1: Authentication** | ✅ Complete | 2025-01 | Google OAuth, middleware, sign-in UI |
-| **Phase 2A: Credits & UI** | 🚧 In Progress | - | Database, context, UI components (no Stripe) |
-| **Phase 2B: Stripe Integration** | ⏳ Pending | - | Payment flow, webhooks, reconciliation |
+| **Phase 2A: Credits & UI** | ✅ Complete | 2025-01 | Database, context, UI components (no Stripe) |
+| **Phase 2B: Stripe Integration** | ⏳ Pending | - | Payment flow (redirect vs in-app), webhooks |
+| **Phase 2C: Showcase Enhancements** | ⏳ Pending | - | Images, audio, skeuomorphic elements |
 | **Phase 3: Image Storage** | ⏳ Pending | - | Supabase storage, cleanup cron |
 | **Phase 4: Polish** | ⏳ Pending | - | Error handling, monitoring, testing |
 
@@ -215,13 +216,36 @@ $$ LANGUAGE SQL STABLE;
    - Install `stripe` package
    - Finalize credit packages (e.g., 10 for $2.99, 50 for $9.99, 100 for $14.99)
 
-2. **Payment Flow**
-   - Create `/api/checkout` endpoint → Stripe Checkout Session
-   - Create `/api/webhooks/stripe` for payment confirmation
-   - Verify webhook signature, add credits on `checkout.session.completed`
-   - Update "Buy Credits" buttons to redirect to checkout
+2. **Payment Flow Options**
 
-3. **Reconciliation**
+   **Option A: Stripe Checkout (Redirect) - RECOMMENDED**
+   - Pros: Faster implementation, PCI compliant out-of-box, mobile optimized
+   - Cons: Leaves your site briefly, less brand control
+   - Implementation:
+     - Create `/api/checkout` endpoint → Stripe Checkout Session
+     - Redirect user to Stripe-hosted page
+     - User pays → redirected back to success/cancel URL
+     - Webhook confirms payment → credits added
+
+   **Option B: Stripe Payment Element (In-App)**
+   - Pros: Full UI control, stays in Morpheo, supports Apple Pay/Google Pay
+   - Cons: More frontend work, need to handle payment states
+   - Implementation:
+     - Install `@stripe/stripe-js` and `@stripe/react-stripe-js`
+     - Create custom checkout modal with Stripe Payment Element
+     - Handle payment intents, confirmations, errors
+     - Webhook confirms payment → credits added
+
+   **Decision:** Start with **Option A** (faster, proven), upgrade to Option B later if needed.
+
+3. **Credit Badge Click Flow**
+   - Make CreditBadge clickable on CameraScreen
+   - On click → open credit purchase modal/flow
+   - Show credit packages with "Best Value" badge
+   - Redirect to checkout (Option A) or show payment form (Option B)
+   - After successful purchase → refresh credits, show success toast
+
+4. **Reconciliation**
    - Implement webhook retry logic
    - Manual reconciliation UI for failed webhooks
    - Store `stripe_payment_id` in credit_transactions
@@ -231,6 +255,43 @@ $$ LANGUAGE SQL STABLE;
 - ⚠️ Webhook failures: Implement idempotency keys
 - ⚠️ Stripe test mode: Use test cards, separate test/prod keys
 - ⚠️ Tax compliance: Enable Stripe Tax or use Lemon Squeezy
+- ⚠️ Apple Pay requires HTTPS + verified domain (works on Vercel)
+- ⚠️ Mobile Safari: Payment Element requires careful styling
+
+---
+
+### Phase 2C: Showcase & Branding Enhancements ⏳ **NEW**
+**Goal:** Polish the app presentation with visual/audio elements.
+
+1. **Showcase Media Assets**
+   - Organize showcase images: `/public/showcase/mobile/` and `/public/showcase/desktop/`
+   - Add hero images demonstrating app features
+   - Screenshots of before/after transformations
+   - Different filter styles showcased
+
+2. **Audio Experience**
+   - Add background music or sound effects (optional)
+   - Consider: shutter sound on capture, success chime on generation
+   - Use Web Audio API or HTML5 `<audio>` with user controls
+   - Respect user preference: mute by default, toggle in settings
+
+3. **Skeuomorphic Visual Elements**
+   - Enhance existing skeumorphic buttons (already implemented in Phase 2A)
+   - Add camera lens reflections, film grain textures
+   - Polaroid-style result display option
+   - Vintage camera UI theme elements
+   - Consider: retro loading animation, film development effect
+
+4. **Landing/Marketing Page** (Optional)
+   - Before sign-in: showcase hero section with demo images
+   - Feature highlights carousel
+   - Social proof: "X photos created this week" stat
+   - Pricing table preview
+
+**Gotchas:**
+- ⚠️ Audio autoplay: Browsers block it, need user interaction first
+- ⚠️ Image file sizes: Optimize showcase images (WebP format, lazy loading)
+- ⚠️ Skeuomorphic overload: Balance aesthetics vs. usability
 
 ---
 

@@ -49,6 +49,26 @@ export default function Home() {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
   }, [])
 
+  // Phase 2B: Handle Stripe payment redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentStatus = urlParams.get('payment')
+
+    if (paymentStatus === 'success') {
+      console.log('[Payment] Payment successful! Refreshing credits...')
+      // Refresh credits to get updated balance
+      refreshCredits()
+      // Clean up URL (remove query params)
+      window.history.replaceState({}, '', '/')
+      // TODO: Show custom success modal/toast here if desired
+    } else if (paymentStatus === 'cancelled') {
+      console.log('[Payment] Payment cancelled by user')
+      // Clean up URL
+      window.history.replaceState({}, '', '/')
+      // TODO: Show custom error modal/toast here if desired
+    }
+  }, [refreshCredits])
+
   // Initialize camera
   useEffect(() => {
     if (currentScreen === SCREENS.CAMERA) {

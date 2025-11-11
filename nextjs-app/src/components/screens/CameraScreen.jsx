@@ -92,13 +92,6 @@ export default function CameraScreen({
     setIsInfoModalOpen(false);
   };
 
-  const handleBuyCredits = () => {
-    // TODO Phase 2B: Navigate to Stripe checkout
-    console.log('[CameraScreen] Buy credits clicked - Stripe integration pending');
-    setShowPaywall(false);
-    setShowSettings(true); // Show settings where buy button is
-  };
-
   return (
     <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px] md:p-0 md:relative">
       {/* Camera Preview */}
@@ -179,12 +172,9 @@ export default function CameraScreen({
       {/* Info Modal - Desktop only (kept for backward compatibility) */}
       <InfoModal isOpen={isInfoModalOpen} onClose={handleCloseModal} />
 
-      {/* Phase 2A: Paywall Modal - Shows when credits = 0 */}
+      {/* Phase 2B: Paywall Modal - Shows when credits = 0, handles Stripe checkout internally */}
       {showPaywall && (
-        <PaywallModal
-          onClose={() => setShowPaywall(false)}
-          onBuyCredits={handleBuyCredits}
-        />
+        <PaywallModal onClose={() => setShowPaywall(false)} />
       )}
 
       {/* Phase 2A: Settings Drawer - Full-screen settings */}

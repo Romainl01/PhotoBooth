@@ -50,9 +50,10 @@ export async function updateSession(request) {
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/sign-in') &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/api/webhooks')
   ) {
-    // No user, redirect to sign-in (except if already on sign-in or auth callback)
+    // No user, redirect to sign-in (except if already on sign-in, auth callback, or webhooks)
     const url = request.nextUrl.clone()
     url.pathname = '/sign-in'
     return NextResponse.redirect(url)
