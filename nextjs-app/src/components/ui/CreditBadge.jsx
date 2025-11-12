@@ -19,9 +19,6 @@ import { useUser } from '@/contexts/UserContext'
 export default function CreditBadge({ className = '' }) {
   const { profile, loading } = useUser()
 
-  // Debug logging
-  console.log('[CreditBadge] Render state:', { loading, profile, credits: profile?.credits })
-
   // Show loading state while profile is being fetched
   if (loading) {
     return (

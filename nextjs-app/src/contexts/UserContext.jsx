@@ -12,6 +12,37 @@ const UserContext = createContext({
 })
 
 /**
+ * Retry a function with exponential backoff
+ * Pure utility function - moved outside component to prevent unnecessary re-renders
+ * @param {Function} fn - Async function to retry
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @returns {Promise} - Result of function or null
+ */
+const retryWithBackoff = async (fn, maxRetries = 3) => {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await fn()
+      if (result) return result
+
+      // If result is null but no error, wait and retry
+      if (attempt < maxRetries - 1) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 8000) // 1s, 2s, 4s, max 8s
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    } catch (error) {
+      console.error(`[Retry] Attempt ${attempt + 1} failed:`, error)
+      if (attempt === maxRetries - 1) {
+        throw error // Final attempt failed
+      }
+      // Wait before retrying
+      const delay = Math.min(1000 * Math.pow(2, attempt), 8000)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  return null
+}
+
+/**
  * UserProvider - Global state management for user authentication and profile data
  *
  * This context provides:
@@ -30,38 +61,41 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [profileError, setProfileError] = useState(null)
   const supabase = createClient()
 
   /**
-   * Fetch user's profile from database
+   * Fetch user's profile from database (with retry logic)
    * @param {string} userId - Supabase auth user ID
    */
   const fetchProfile = useCallback(async (userId) => {
-    try {
-      console.log('[UserContext] Fetching profile for user:', userId)
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+    const result = await retryWithBackoff(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single()
 
-      if (error) {
-        console.error('[UserContext] Error fetching profile:', error)
-        console.error('[UserContext] Error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details
-        })
+        if (error) {
+          console.error('[UserContext] Error fetching profile:', error)
+          return null
+        }
+
+        setProfile(data)
+        setProfileError(null) // Clear any previous errors
+        return data
+      } catch (error) {
+        console.error('[UserContext] Unexpected error fetching profile:', error)
         return null
       }
+    }, 3) // 3 retry attempts
 
-      console.log('[UserContext] Profile fetched successfully:', data)
-      setProfile(data)
-      return data
-    } catch (error) {
-      console.error('[UserContext] Unexpected error fetching profile:', error)
-      return null
+    if (!result) {
+      setProfileError('Unable to load your profile. Please refresh the page.')
     }
+
+    return result
   }, [supabase])
 
   /**
@@ -96,8 +130,6 @@ export function UserProvider({ children }) {
       async (event, session) => {
         if (!mounted) return
 
-        console.log('[UserContext] Auth event:', event)
-
         setUser(session?.user ?? null)
 
         if (session?.user) {
@@ -121,6 +153,7 @@ export function UserProvider({ children }) {
     profile,
     loading,
     refreshCredits,
+    profileError,
   }
 
   return (
