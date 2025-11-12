@@ -1,5 +1,6 @@
-import { Geist, Geist_Mono, DM_Mono, IBM_Plex_Mono } from "next/font/google";
+import { Geist, Geist_Mono, DM_Mono, IBM_Plex_Mono, Crimson_Pro } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { UserProvider } from "@/contexts/UserContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,9 +25,16 @@ const ibmPlexMono = IBM_Plex_Mono({
   variable: "--font-ibm-plex-mono",
 });
 
+const crimsonPro = Crimson_Pro({
+  weight: ['700'],
+  subsets: ["latin"],
+  variable: "--font-crimson-pro",
+});
+
 export const metadata = {
   title: "Morpheo - AI Photobooth",
   description: "Transform your photos with AI-powered creative filters",
+  themeColor: '#242424', // Dark background color for Safari UI chrome
   icons: {
     icon: [
       { url: '/logo.svg', type: 'image/svg+xml' },
@@ -64,9 +72,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${dmMono.variable} ${ibmPlexMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${dmMono.variable} ${ibmPlexMono.variable} ${crimsonPro.variable} antialiased`}
       >
-        {children}
+        <UserProvider>
+          {children}
+        </UserProvider>
         <Analytics />
       </body>
     </html>

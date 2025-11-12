@@ -1,7 +1,7 @@
 # MORPHEO - Product & Technical Documentation
 
-**Version:** 1.0.0
-**Last Updated:** October 29, 2025
+**Version:** 2.0.0 - Production Payment System
+**Last Updated:** November 12, 2025
 **Live URL:** https://morpheo-phi.vercel.app/
 
 ---
@@ -87,11 +87,15 @@
 - AI generation via Gemini
 - Basic sharing and download
 
-#### Phase 2: Enhanced Features 🔄 (Planned)
-- User accounts with image history
-- Additional 10+ filters
-- Batch processing for multiple photos
-- Advanced editing controls (brightness, contrast)
+#### Phase 2: Morpheo 2.0 - Authentication & User Accounts 🔄 (In Progress)
+- ✅ Sign-in screen UI with skeuomorphic TV design
+- 🔄 Google OAuth integration (setup guide complete)
+- 📋 User session management with Supabase
+- 📋 User profile and image history
+- 📋 Real-time usage statistics
+- 📋 Additional 10+ filters
+- 📋 Batch processing for multiple photos
+- 📋 Advanced editing controls (brightness, contrast)
 
 #### Phase 3: Social & Teams 📋 (Future)
 - Social media optimization presets
@@ -2053,6 +2057,67 @@ export default function CaptureIcon() {
 // Both are secondary action buttons with similar structure
 ```
 
+#### Pattern 5: React Dependency Management
+
+**Rule:** Pure utility functions should be defined at module level, not inside components.
+
+**Correct:**
+```jsx
+// Module-level pure function (stable reference)
+const retryWithBackoff = async (fn, maxRetries = 3) => {
+  // Implementation that only uses parameters
+}
+
+export function MyComponent() {
+  const [data, setData] = useState(null)
+
+  const fetchData = useCallback(async (id) => {
+    const result = await retryWithBackoff(async () => {
+      // Fetch logic using setData
+    })
+  }, []) // retryWithBackoff not in deps (stable module reference)
+
+  useEffect(() => {
+    fetchData(userId)
+  }, [fetchData, userId])
+}
+```
+
+**Incorrect:**
+```jsx
+// ❌ Function defined inside component (recreated every render)
+export function MyComponent() {
+  const [data, setData] = useState(null)
+
+  const retryWithBackoff = async (fn, maxRetries = 3) => {
+    // Same implementation
+  }
+
+  const fetchData = useCallback(async (id) => {
+    const result = await retryWithBackoff(async () => {
+      // Fetch logic
+    })
+  }, [retryWithBackoff]) // Unstable dependency!
+
+  useEffect(() => {
+    fetchData(userId)
+  }, [fetchData, userId]) // Effect runs every render → infinite loop
+}
+```
+
+**Why:**
+- Functions defined inside components get new references every render
+- Including them in dependency arrays causes effects/callbacks to recreate
+- This creates infinite loops: render → new function → effect runs → setState → render
+- Pure functions (no component state/props) should live at module level
+- **Real impact:** 10-20x database queries per page load → 1 query (95% reduction)
+
+**Identification Checklist:**
+- ✅ Function uses only its parameters → move to module level
+- ✅ Function uses browser APIs only (setTimeout, console) → module level
+- ❌ Function uses component state (setState) → keep in component with useCallback
+- ❌ Function uses props → keep in component with useCallback
+
 ### 8.2 Common Pitfalls
 
 #### Pitfall 1: Wrapper Div Proliferation
@@ -2312,6 +2377,16 @@ KV_REST_API_TOKEN=your_upstash_redis_token
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `GOOGLE_API_KEY` | Google GenAI API key | `AIzaSyD...` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | `eyJhbGc...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | `eyJhbGc...` |
+| `STRIPE_SECRET_KEY` | Stripe secret key (live) | `sk_live_...` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (live) | `pk_live_...` |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | `whsec_...` |
+| `NEXT_PUBLIC_STRIPE_PRICE_STARTER` | Stripe price ID for Starter package | `price_...` |
+| `NEXT_PUBLIC_STRIPE_PRICE_CREATOR` | Stripe price ID for Creator package | `price_...` |
+| `NEXT_PUBLIC_STRIPE_PRICE_PRO` | Stripe price ID for Pro package | `price_...` |
+| `NEXT_PUBLIC_APP_URL` | Production app URL | `https://morpheo-phi.vercel.app` |
 
 #### Optional Variables
 
@@ -2320,12 +2395,23 @@ KV_REST_API_TOKEN=your_upstash_redis_token
 | `KV_REST_API_URL` | Upstash Redis URL | Rate limiting |
 | `KV_REST_API_TOKEN` | Upstash Redis token | Rate limiting |
 
+#### Environment-Based Configuration
+
+Morpheo uses environment variables to support different configurations for local development (test mode) and production (live mode):
+
+- **Local Development:** Uses test Stripe keys and test price IDs from `.env.local`
+- **Production/Preview:** Uses live Stripe keys and production price IDs from Vercel environment variables
+
+**See:** [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) for complete production deployment guide.
+
 #### Security Best Practices
 
 1. **Never Commit Secrets:** Keep `.env.local` in `.gitignore`
 2. **Rotate Keys Regularly:** Update API keys every 90 days
 3. **Use Vercel Secrets:** Store sensitive data in Vercel dashboard
 4. **Restrict API Keys:** Limit Google API key to specific domains
+5. **Separate Test/Live Keys:** Never use production Stripe keys in development
+6. **Webhook Security:** Verify webhook signatures using `STRIPE_WEBHOOK_SECRET`
 
 ### 9.4 SEO & Social Sharing
 
@@ -2879,6 +2965,86 @@ du -sh .next/static
 - Time to Interactive: < 3s
 - Generation time: < 10s
 
+#### PaywallModal Optimization (Optimistic UI Pattern)
+
+**Problem:** Modal showed "Loading packages..." state (200-500ms delay) when opening.
+
+**Solution:** Implemented single source of truth pattern with zero loading state.
+
+**Implementation:**
+
+1. **Constants File** (`/lib/creditPackages.js`):
+```javascript
+export const DEFAULT_CREDIT_PACKAGES = [
+  {
+    id: '1',
+    name: 'Starter',
+    emoji: '💫',
+    credits: 10,
+    price_cents: 299,
+    currency: 'EUR',
+    stripe_price_id: 'price_1SS4E8K9cHL77TyOtdNpKgCr',
+  },
+  // Creator and Pro packages...
+]
+```
+
+2. **Component Update** (`PaywallModal.jsx`):
+```javascript
+// Initialize with constants for instant UI
+const [packages, setPackages] = useState(DEFAULT_CREDIT_PACKAGES)
+
+// Background sync (optional, silently updates from DB)
+useEffect(() => {
+  fetch('/api/credit-packages')
+    .then(res => res.json())
+    .then(data => setPackages(data.packages))
+    .catch(err => console.error(err)) // No fallback needed - already initialized
+}, [])
+```
+
+3. **API Route Update** (`/api/credit-packages/route.js`):
+```javascript
+import { DEFAULT_CREDIT_PACKAGES } from '@/lib/creditPackages'
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from('credit_packages')
+      .select('*')
+
+    if (error) throw error
+    return NextResponse.json({ packages: data })
+  } catch (error) {
+    // Return constants as fallback
+    return NextResponse.json({ packages: DEFAULT_CREDIT_PACKAGES })
+  }
+}
+```
+
+**Results:**
+- ✅ Zero loading state (instant UI rendering)
+- ✅ Single source of truth for pricing
+- ✅ Guaranteed consistency between component and API
+- ✅ Graceful degradation when database fails
+- ✅ 200-500ms performance improvement
+
+**Architecture:**
+```
+DEFAULT_CREDIT_PACKAGES (lib/creditPackages.js)
+    │
+    ├──> PaywallModal: Initialize state instantly
+    └──> API Route: Fallback when DB fails
+```
+
+**Updating Prices:**
+1. Update Stripe dashboard (create new price ID)
+2. Update `DEFAULT_CREDIT_PACKAGES` in `/lib/creditPackages.js`
+3. Update database via Supabase SQL
+4. Deploy to production
+
+**Pattern:** Optimistic UI - treat configuration as code, not dynamic data. Credit packages change rarely (1-2x/year), so hardcoding with optional background sync provides best UX.
+
 ---
 
 ## 11. Appendices
@@ -2925,7 +3091,47 @@ du -sh .next/static
 
 ### 11.3 Changelog
 
-#### Version 1.0.0 (Current)
+#### Version 1.1.0 - Morpheo 2.0 Phase 1 (Current)
+**Release Date:** November 2025
+**Last Update:** November 12, 2025
+
+**Features:**
+- ✅ Sign-in screen UI with skeuomorphic TV design
+- ✅ MorpheoLogo component with red recording dot
+- ✅ ShowcaseTV component with layered shadow effects
+- ✅ GoogleButton component (styled, auth integration pending)
+- ✅ Responsive mobile/desktop layouts (338px mobile, 800px desktop)
+- ✅ Responsive showcase images with VHS playback effect
+  - Desktop (≥768px): 9 landscape photos from `/showcase/desktop/`
+  - Mobile (<768px): 8 portrait photos from `/showcase/mobile/`
+  - Dynamic viewport detection using `matchMedia`
+  - Auto-rotate with VHS glitch effects
+- ✅ IBM Plex Mono & Crimson Pro fonts integrated
+- ✅ Component composition patterns for reusability
+- ✅ UserContext with authentication and credit management
+- ✅ CreditBadge with liquid glass effect and color-coded states
+- 🔄 Google OAuth setup guide complete (implementation pending)
+
+**Performance Optimizations:**
+- ✅ Fixed infinite render loop in UserContext (Jan 12, 2025)
+  - Moved `retryWithBackoff` utility to module level
+  - Stabilized React dependency chain
+  - Reduced database queries from 10-20 per page load to 1
+  - 95% reduction in Supabase API calls
+- ✅ Eliminated PaywallModal loading state (Nov 12, 2025)
+  - Implemented optimistic UI pattern with constants
+  - Created single source of truth in `/lib/creditPackages.js`
+  - Zero loading state (instant UI rendering)
+  - 200-500ms performance improvement
+
+**Documentation Added:**
+- Complete sign-in UI implementation guide
+- Google OAuth setup guide for Supabase
+- Morpheo 2.0 design specifications
+- Phase-based implementation roadmap
+- UserContext performance optimization notes
+
+#### Version 1.0.0
 **Release Date:** October 2025
 
 **Features:**
@@ -2955,13 +3161,20 @@ du -sh .next/static
 ### 11.4 Project File References
 
 #### Core Documentation Files
-- `PROJECT_SPEC.md` - Original project specification and architecture
-- `PROJECT_LEARNINGS.md` - Critical patterns and best practices
-- `NEXTJS_MIGRATION_PLAN.md` - Migration from Vite to Next.js
-- `WATERMARK_REFERENCE.md` - Watermark implementation details
-- `RATE_LIMIT_REFERENCE.md` - Rate limiting reference (Upstash)
-- `CAMERA_PERMISSION_PLAN.md` - Camera permission modal plan
-- `UI_IMPLEMENTATION_BRIEF.md` - UI design guidelines
+- `docs/PROJECT_SPEC.md` - Original project specification and architecture
+- `docs/PROJECT_LEARNINGS.md` - Critical patterns and best practices
+- `docs/NEXTJS_MIGRATION_PLAN.md` - Migration from Vite to Next.js
+- `docs/WATERMARK_REFERENCE.md` - Watermark implementation details
+- `docs/RATE_LIMIT_REFERENCE.md` - Rate limiting reference (Upstash)
+- `docs/CAMERA_PERMISSION_PLAN.md` - Camera permission modal plan
+- `docs/UI_IMPLEMENTATION_BRIEF.md` - UI design guidelines
+
+#### Morpheo 2.0 - Authentication Documentation
+- `docs/SIGN_IN_UI_IMPLEMENTATION.md` - Complete sign-in screen implementation guide (Phase 1 ✅)
+- `docs/GOOGLE_OAUTH_SETUP_GUIDE.md` - Step-by-step Google OAuth and Supabase setup
+- `MORPHEO_2.0_PHASE_1_SETUP.md` - Morpheo 2.0 technical setup and dependencies
+- `MORPHEO_2.0_PHASE_1_DESIGN_SPEC.md` - Design specifications and Figma references
+- `MORPHEO_2.0_IMPLEMENTATION_PLAN.md` - Overall implementation roadmap
 
 #### Key Code Files
 - `src/app/page.js` - Main application entry point
@@ -2994,9 +3207,9 @@ du -sh .next/static
 
 ## Document Maintenance
 
-**Current Version:** 1.0.0
-**Last Updated:** October 29, 2025
-**Next Review:** November 2025
+**Current Version:** 1.1.0 - Morpheo 2.0 Phase 1
+**Last Updated:** November 10, 2025
+**Next Review:** December 2025
 
 **Update Triggers:**
 - New feature implementation

@@ -13,13 +13,17 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useUser } from '@/contexts/UserContext';
 import IconButton from '../ui/IconButton';
 import FilterSelector from '../ui/FilterSelector';
+import CreditBadge from '../ui/CreditBadge';
+import PaywallModal from '../modals/PaywallModal';
+import SettingsDrawer from '../modals/SettingsDrawer';
 import InfoModal from '../ui/InfoModal';
 import CaptureIcon from '../icons/CaptureIcon';
 import UploadIcon from '../icons/UploadIcon';
 import SwitchCameraIcon from '../icons/SwitchCameraIcon';
-import InfoIcon from '../icons/InfoIcon';
+import SettingsIcon from '../icons/SettingsIcon';
 
 export default function CameraScreen({
   currentFilter,
@@ -28,12 +32,37 @@ export default function CameraScreen({
   onUpload,
   videoRef,
   canvasRef,
+  isGenerating = false,
 }) {
   const fileInputRef = useRef(null);
   const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
+  // Phase 2A: Credit system integration
+  const { profile } = useUser();
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  /**
+   * Check if user has credits before allowing capture/upload
+   * @returns {boolean} True if user has credits, false otherwise
+   */
+  const checkCredits = () => {
+    if (!profile || profile.credits < 1) {
+      setShowPaywall(true);
+      return false;
+    }
+    return true;
+  };
+
   const handleUploadClick = () => {
+    // Prevent upload if already generating
+    if (isGenerating) {
+      console.log('[Upload] Already generating, ignoring click')
+      return
+    }
+    // Check credits before allowing upload
+    if (!checkCredits()) return;
     fileInputRef.current?.click();
   };
 
@@ -44,11 +73,26 @@ export default function CameraScreen({
     }
   };
 
+  const handleCaptureClick = () => {
+    // Prevent capture if already generating
+    if (isGenerating) {
+      console.log('[Capture] Already generating, ignoring click')
+      return
+    }
+    // Check credits before allowing capture
+    if (!checkCredits()) return;
+    onCapture();
+  };
+
   const handleSwitchCamera = () => {
     const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(newFacingMode);
     // This would trigger re-initialization of camera with new facing mode
     // Implementation will be handled in the parent component/context
+  };
+
+  const handleSettingsClick = () => {
+    setShowSettings(true);
   };
 
   const handleInfoClick = () => {
@@ -74,6 +118,9 @@ export default function CameraScreen({
 
           {/* Canvas for capturing (hidden) */}
           <canvas ref={canvasRef} className="hidden" />
+
+          {/* Phase 2A: Credit Badge - top-right corner */}
+          <CreditBadge className="absolute top-4 right-4 z-10" />
 
           {/* Inner shadow for depth */}
           <div className="absolute inset-0 pointer-events-none shadow-camera-inner md:shadow-none" />
@@ -101,22 +148,22 @@ export default function CameraScreen({
             className="hidden"
           />
 
-          {/* Capture Button (Center - Main) */}
+          {/* Capture Button (Center - Main) - Phase 2A: Check credits before capture */}
           <IconButton
             variant="main"
-            onClick={onCapture}
+            onClick={handleCaptureClick}
             ariaLabel="Capture photo"
           >
             <CaptureIcon className="w-full h-full" iconType="camera" />
           </IconButton>
 
-          {/* Info Button (Mobile and Desktop) */}
+          {/* Settings Button (Phase 2A: Replaces Info button) */}
           <IconButton
             variant="secondary"
-            onClick={handleInfoClick}
-            ariaLabel="Information"
+            onClick={handleSettingsClick}
+            ariaLabel="Settings"
           >
-            <InfoIcon className="w-full h-full" />
+            <SettingsIcon className="w-full h-full" />
           </IconButton>
         </div>
 
@@ -133,8 +180,19 @@ export default function CameraScreen({
         <div className="h-[40px] w-full bg-background md:hidden" />
       </div>
 
-      {/* Info Modal - Desktop only */}
+      {/* Info Modal - Desktop only (kept for backward compatibility) */}
       <InfoModal isOpen={isInfoModalOpen} onClose={handleCloseModal} />
+
+      {/* Phase 2B: Paywall Modal - Shows when credits = 0, handles Stripe checkout internally */}
+      {showPaywall && (
+        <PaywallModal onClose={() => setShowPaywall(false)} />
+      )}
+
+      {/* Phase 2A: Settings Drawer - Full-screen settings */}
+      <SettingsDrawer
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </div>
   );
 }

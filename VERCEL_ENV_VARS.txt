@@ -1,0 +1,45 @@
+# VERCEL PRODUCTION ENVIRONMENT VARIABLES
+# Copy these to: Vercel Dashboard > Your Project > Settings > Environment Variables
+# IMPORTANT: Set environment to "Production" for each variable!
+
+# ==========================================
+# GOOGLE API
+# ==========================================
+GOOGLE_API_KEY=<your_google_api_key>
+
+# ==========================================
+# SUPABASE
+# ==========================================
+NEXT_PUBLIC_SUPABASE_URL=<your_supabase_url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_supabase_anon_key>
+SUPABASE_SERVICE_ROLE_KEY=<your_supabase_service_role_key>
+
+# ==========================================
+# STRIPE (PRODUCTION/LIVE MODE)
+# ==========================================
+STRIPE_SECRET_KEY=<your_stripe_live_secret_key>
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<your_stripe_live_publishable_key>
+STRIPE_WEBHOOK_SECRET=<your_stripe_webhook_secret>
+
+# ==========================================
+# STRIPE PRICE IDs (PRODUCTION)
+# ==========================================
+NEXT_PUBLIC_STRIPE_PRICE_STARTER=<your_starter_price_id>
+NEXT_PUBLIC_STRIPE_PRICE_CREATOR=<your_creator_price_id>
+NEXT_PUBLIC_STRIPE_PRICE_PRO=<your_pro_price_id>
+
+# ==========================================
+# APP URL (PRODUCTION)
+# ==========================================
+NEXT_PUBLIC_APP_URL=<your_production_url>
+
+# ==========================================
+# TOTAL: 11 environment variables
+# ==========================================
+
+# CHECKLIST:
+# [ ] All 11 variables added to Vercel
+# [ ] Environment set to "Production" for each
+# [ ] No typos in variable names
+# [ ] No extra spaces in values
+# [ ] Clicked "Save" after adding each variable

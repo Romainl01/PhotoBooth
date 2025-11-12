@@ -244,13 +244,27 @@ npm start
 
 ---
 
+## 🔐 Production-Ready Security
+
+Morpheo includes production-grade security features:
+
+- **Production-Safe Logging** - Environment-aware logging with automatic PII sanitization (user IDs, emails, payment info redacted in production)
+- **Security Headers** - OWASP-recommended headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, etc.)
+- **Credit-Based Protection** - Natural rate limiting through credit system - users can't spam beyond purchased credits
+- **Payment Security** - Stripe webhook signature verification and idempotent processing
+- **Zero Vulnerabilities** - npm audit clean, all dependencies up-to-date
+
+See [MORPHEO_DOCUMENTATION.md](MORPHEO_DOCUMENTATION.md) for security implementation details.
+
+---
+
 ## 📚 Documentation
 
 For comprehensive documentation, see:
 
 - **[MORPHEO_DOCUMENTATION.md](MORPHEO_DOCUMENTATION.md)** - Complete technical documentation
-- **[CAMERA_PERMISSION_PLAN.md](CAMERA_PERMISSION_PLAN.md)** - Camera permission implementation plan
-- **[PROJECT_LEARNINGS.md](PROJECT_LEARNINGS.md)** - Best practices and patterns
+- **[PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md)** - Stripe payment production deployment guide
+- **[PROJECT_LEARNINGS.md](docs/PROJECT_LEARNINGS.md)** - Best practices and patterns
 
 ---
 
@@ -301,5 +315,5 @@ Made with 🫶 by Romain Lagrange
 
 ---
 
-**Version:** 1.0.0
-**Last Updated:** October 29, 2025
+**Version:** 2.1.0 - Production-Ready
+**Last Updated:** November 12, 2025

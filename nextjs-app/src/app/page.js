@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useUser } from '@/contexts/UserContext'
+import { createClient } from '@/lib/supabase/client'
 import CameraScreen from '@/components/screens/CameraScreen'
 import ResultScreen from '@/components/screens/ResultScreen'
 import CameraAccessError from '@/components/screens/CameraAccessError'
@@ -23,6 +25,9 @@ const SCREENS = {
 }
 
 export default function Home() {
+  // Phase 2A: User context for credit management
+  const { refreshCredits } = useUser()
+
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState(SCREENS.CAMERA)
 
@@ -32,6 +37,9 @@ export default function Home() {
   // Image data
   const [capturedImage, setCapturedImage] = useState(null)
   const [generatedImage, setGeneratedImage] = useState(null)
+
+  // Generation lock (prevent race condition from multiple rapid clicks)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // Camera refs
   const videoRef = useRef(null)
@@ -44,6 +52,52 @@ export default function Home() {
   useEffect(() => {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
   }, [])
+
+  // Set dark background for camera page (Safari mobile fix)
+  useEffect(() => {
+    document.documentElement.style.backgroundColor = '#242424';
+
+    return () => {
+      document.documentElement.style.backgroundColor = '#e3e3e3';
+    };
+  }, []);
+
+  // Phase 2B: Handle Stripe payment redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentStatus = urlParams.get('payment')
+
+    if (paymentStatus === 'success') {
+      console.log('[Payment] Payment successful! Refreshing credits...')
+
+      // Poll for credits update (webhook might take 1-3 seconds)
+      let pollCount = 0
+      const maxPolls = 5 // Poll up to 5 times
+
+      const pollInterval = setInterval(async () => {
+        console.log(`[Payment] Polling credits (attempt ${pollCount + 1}/${maxPolls})`)
+        await refreshCredits()
+        pollCount++
+
+        if (pollCount >= maxPolls) {
+          clearInterval(pollInterval)
+          console.log('[Payment] Stopped polling after', pollCount, 'attempts')
+        }
+      }, 2000) // Poll every 2 seconds
+
+      // Clean up URL (remove query params) after a short delay
+      setTimeout(() => {
+        window.history.replaceState({}, '', '/')
+      }, 3000)
+
+      // Cleanup interval on unmount
+      return () => clearInterval(pollInterval)
+    } else if (paymentStatus === 'cancelled') {
+      console.log('[Payment] Payment cancelled by user')
+      // Clean up URL
+      window.history.replaceState({}, '', '/')
+    }
+  }, [refreshCredits])
 
   // Initialize camera
   useEffect(() => {
@@ -90,6 +144,12 @@ export default function Home() {
 
   // Capture photo
   const handleCapture = async () => {
+    // Guard: Prevent multiple simultaneous generations (race condition)
+    if (isGenerating) {
+      console.log('[Capture] Already generating, ignoring click')
+      return
+    }
+
     if (!videoRef.current || !canvasRef.current) return
 
     const video = videoRef.current
@@ -198,6 +258,9 @@ export default function Home() {
       return
     }
 
+    // Lock generation to prevent race condition
+    setIsGenerating(true)
+
     // Show loading screen immediately
     setCurrentScreen(SCREENS.LOADING)
 
@@ -205,6 +268,16 @@ export default function Home() {
     console.log('Generating with style:', style, 'Image data length:', imageData.length)
 
     try {
+      // Refresh session before API call (prevent session expiry mid-generation)
+      const supabase = createClient()
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
+
+      if (refreshError) {
+        console.error('[Session] Failed to refresh session:', refreshError)
+        throw new Error('Your session expired. Please sign in again.')
+      }
+
+      console.log('[Session] Token refreshed successfully')
       const response = await fetch('/api/generate-headshot', {
         method: 'POST',
         headers: {
@@ -218,9 +291,29 @@ export default function Home() {
 
       const data = await response.json()
 
+      // Phase 2A: Handle 402 Payment Required (insufficient credits)
+      if (response.status === 402) {
+        console.log('[Generate] Insufficient credits - returning to camera with paywall')
+        setCurrentScreen(SCREENS.CAMERA)
+        // Paywall will be shown by CameraScreen component
+        return
+      }
+
+      // Phase 2A: Handle 401 Unauthorized (should not happen with middleware, but safe to check)
+      if (response.status === 401) {
+        console.error('[Generate] Unauthorized - redirecting to sign-in')
+        window.location.href = '/sign-in'
+        return
+      }
+
       if (data.success && data.image) {
         setGeneratedImage(data.image)
         setCurrentScreen(SCREENS.RESULT)
+
+        // Phase 2A: Refresh credits after successful generation
+        // This updates the UI to show new credit count
+        console.log('[Generate] Success - refreshing credits')
+        await refreshCredits()
       } else {
         console.error('Generation failed:', data.error)
         setCurrentScreen(SCREENS.API_ERROR)
@@ -228,6 +321,9 @@ export default function Home() {
     } catch (error) {
       console.error('Error generating image:', error)
       setCurrentScreen(SCREENS.API_ERROR)
+    } finally {
+      // Always unlock generation, even if there was an error
+      setIsGenerating(false)
     }
   }
 
@@ -287,6 +383,7 @@ export default function Home() {
             onUpload={handleUpload}
             videoRef={videoRef}
             canvasRef={canvasRef}
+            isGenerating={isGenerating}
           />
         )}
 

@@ -2,10 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix mobile background color - Safari shows html bg behind browser UI */
+html {
+  background-color: #e3e3e3; /* Gray default for sign-in page (camera page overrides via JS) */
+  height: 100%;
+  height: -webkit-fill-available; /* Safari support */
+}
+
 body {
   margin: 0;
   font-family: "IBM Plex Mono", monospace;
   background-color: #242424;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh; /* Fallback for older browsers */
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
 }

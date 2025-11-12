@@ -1,0 +1,184 @@
+/**
+ * SignInLayout Component
+ *
+ * Complete sign-in page layout composing:
+ * - MorpheoLogo (camera icon + brand name)
+ * - Text frame (tagline + stats)
+ * - ShowcaseTV (skeuomorphic TV with hero photo)
+ * - GoogleButton (Continue with Google CTA)
+ *
+ * Layout:
+ * - Mobile-first responsive design
+ * - Centered vertical stack with 24px gaps
+ * - Light gray background (#e3e3e3)
+ * - 32px horizontal padding
+ *
+ * Showcase Images:
+ * - Responsive image selection based on viewport
+ * - Desktop (≥768px): 9 landscape photos from /showcase/desktop/
+ * - Mobile (<768px): 8 portrait photos from /showcase/mobile/
+ * - Dynamic switching on resize using matchMedia
+ *
+ * Authentication:
+ * - Google OAuth via Supabase
+ * - Redirects to /auth/callback after consent
+ * - Session managed via cookies
+ */
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import MorpheoLogo from './MorpheoLogo';
+import ShowcaseTV from './ShowcaseTV';
+import VHSPlayback from './VHSPlayback';
+import GoogleButton from './GoogleButton';
+
+export default function SignInLayout() {
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
+
+  // Ensure gray background for Safari mobile (already default, but set for client-side nav)
+  useEffect(() => {
+    document.documentElement.style.backgroundColor = '#e3e3e3';
+  }, []);
+
+  // Desktop showcase images (768px+)
+  const desktopShowcaseImages = [
+    '/showcase/desktop/morpheo-photo-1761176875650.jpg',
+    '/showcase/desktop/morpheo-photo-1761231588775.jpg',
+    '/showcase/desktop/morpheo-photo-1761239184895.jpg',
+    '/showcase/desktop/morpheo-photo-1761593485876.jpg',
+    '/showcase/desktop/morpheo-photo-1761652384030.jpg',
+    '/showcase/desktop/morpheo-photo-1761652591619.jpg',
+    '/showcase/desktop/morpheo-photo-1762967157364.jpg',
+    '/showcase/desktop/morpheo-photo-1762967211271.jpg',
+    '/showcase/desktop/morpheo-photo-1762967328177.jpg',
+  ];
+
+  // Mobile showcase images (<768px)
+  const mobileShowcaseImages = [
+    '/showcase/mobile/Mobile Kill Bill Emma.png',
+    '/showcase/mobile/Mobile Kill Bill Thomas.png',
+    '/showcase/mobile/Mobile Lord Romain.png',
+    '/showcase/mobile/Mobile Matrix Romain.png',
+    '/showcase/mobile/Mobile Star Wars Thomas.png',
+    '/showcase/mobile/Mobile Star Wars Valentin.png',
+    '/showcase/mobile/Mobile Zombie Samy.png',
+    '/showcase/mobile/Samy.jpeg',
+  ];
+
+  // Viewport detection for responsive image selection
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Detect viewport size and handle resize
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+
+    // Set initial value
+    setIsDesktop(mediaQuery.matches);
+
+    // Update on resize
+    const handleChange = (e) => setIsDesktop(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Select images based on viewport
+  const showcaseImages = isDesktop ? desktopShowcaseImages : mobileShowcaseImages;
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        console.error('OAuth error:', error.message);
+        alert('Failed to sign in with Google. Please try again.');
+        setIsLoading(false);
+      }
+
+      // If successful, user will be redirected to Google
+      // No need to reset loading state as page will navigate away
+    } catch (err) {
+      console.error('Unexpected error during sign-in:', err);
+      alert('An unexpected error occurred. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className="
+      min-h-screen
+      bg-[#e3e3e3]
+      flex
+      flex-col
+      items-center
+      justify-center
+      py-[24px]
+      px-[32px]
+    ">
+      {/* Content Container */}
+      <div className="
+        flex
+        flex-col
+        gap-[24px]
+        items-center
+        w-full
+        max-w-[864px]
+      ">
+        {/* Logo Section */}
+        <MorpheoLogo showRedDot={true} />
+
+        {/* Text Frame - Tagline + Stats */}
+        <div className="
+          flex
+          flex-col
+          gap-[8px]
+          items-center
+          w-full
+          text-center
+        ">
+          {/* Tagline */}
+          <p className="
+            font-['IBM_Plex_Mono']
+            font-semibold
+            text-[16px]
+            leading-[32px]
+            text-black
+          ">
+            One selfie, infinite possibilities
+          </p>
+
+          {/* Stats */}
+          <p className="
+            font-['IBM_Plex_Mono']
+            font-semibold
+            text-[12px]
+            leading-[24px]
+            text-black
+          ">
+            ⚡ 1,576 photos created this week
+            {/* TODO Phase 2: Replace with Supabase query: {weeklyPhotoCount} */}
+          </p>
+        </div>
+
+        {/* VHS Playback in TV Frame */}
+        <ShowcaseTV
+          buttonContent={
+            <GoogleButton onClick={handleGoogleSignIn} disabled={isLoading} />
+          }
+        >
+          <VHSPlayback images={showcaseImages} />
+        </ShowcaseTV>
+      </div>
+    </main>
+  );
+}
