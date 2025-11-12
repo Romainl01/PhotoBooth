@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { STYLE_PROMPTS } from '@/constants/stylePrompts';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 // Initialize Google GenAI
 const ai = new GoogleGenAI({
@@ -17,16 +19,42 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.error('[Auth Check] Unauthorized:', authError?.message);
+      logger.error('Auth Check - Unauthorized', { error: authError?.message });
       return NextResponse.json(
         { error: 'Unauthorized. Please sign in to generate images.' },
         { status: 401 }
       );
     }
 
-    console.log(`[Auth Check] User authenticated: ${user.id}`);
+    logger.debug('Auth Check - User authenticated', { userId: user.id });
 
-    // 2. Check credits BEFORE generation (saves Gemini API costs)
+    // 2. Rate Limiting - Prevent API abuse and quota exhaustion
+    const { success: rateLimitOk, limit, remaining, reset } = await checkRateLimit(user.id, 'generation');
+
+    if (!rateLimitOk) {
+      logger.warn('Rate Limit - Generation limit exceeded', { userId: user.id, limit, remaining });
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `You can generate ${limit} images per hour. Please try again later.`,
+          limit,
+          remaining,
+          resetAt: new Date(reset).toISOString(),
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': limit.toString(),
+            'X-RateLimit-Remaining': remaining.toString(),
+            'X-RateLimit-Reset': reset.toString(),
+          },
+        }
+      );
+    }
+
+    logger.debug('Rate Limit - Check passed', { remaining, limit });
+
+    // 3. Check credits BEFORE generation (saves Gemini API costs)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits')
@@ -34,18 +62,18 @@ export async function POST(request) {
       .single();
 
     if (profileError || !profile) {
-      console.error('[Credit Check] Profile not found:', profileError?.message);
+      logger.error('Credit Check - Profile not found', { error: profileError?.message });
       return NextResponse.json(
         { error: 'User profile not found. Please contact support.' },
         { status: 404 }
       );
     }
 
-    console.log(`[Credit Check] User has ${profile.credits} credits`);
+    logger.debug('Credit Check - User credits', { credits: profile.credits });
 
-    // 3. Block if insufficient credits (402 = Payment Required)
+    // 4. Block if insufficient credits (402 = Payment Required)
     if (profile.credits < 1) {
-      console.log('[Credit Check] Insufficient credits - blocking generation');
+      logger.info('Credit Check - Insufficient credits, blocking generation');
       return NextResponse.json(
         {
           error: 'Insufficient credits',
@@ -73,7 +101,7 @@ export async function POST(request) {
     // Get prompt for the selected style
     const prompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.Executive;
 
-    console.log(`Generating headshot with style: ${style}`);
+    logger.debug('Generating headshot', { style });
 
     // Prepare the request with text prompt first, then image
     const contents = [
@@ -94,7 +122,7 @@ export async function POST(request) {
         contents: contents,
       });
     } catch (apiError) {
-      console.error('Gemini API error:', apiError)
+      logger.error('Gemini API error', { error: apiError.message })
 
       // Check for quota/rate limit errors
       if (
@@ -103,7 +131,7 @@ export async function POST(request) {
         apiError.message?.includes('rate limit') ||
         apiError.code === 'RESOURCE_EXHAUSTED'
       ) {
-        console.error('[QUOTA EXCEEDED] Gemini API quota exceeded:', {
+        logger.error('QUOTA EXCEEDED - Gemini API quota exhausted', {
           userId: user.id,
           timestamp: new Date().toISOString(),
           error: apiError.message
@@ -125,7 +153,7 @@ export async function POST(request) {
 
     // Validate response structure
     if (!response || !response.candidates || response.candidates.length === 0) {
-      console.error('Invalid API response:', JSON.stringify(response, null, 2));
+      logger.error('Invalid API response - no candidates', { hasResponse: !!response });
       throw new Error('No candidates in API response');
     }
 
@@ -133,7 +161,7 @@ export async function POST(request) {
 
     // Check for API rejection with specific finish reasons
     if (candidate.finishReason && candidate.finishReason !== 'STOP') {
-      console.error('API rejected generation:', JSON.stringify(candidate, null, 2));
+      logger.error('API rejected generation', { finishReason: candidate.finishReason });
 
       // Provide user-friendly error messages based on finish reason
       const errorMessages = {
@@ -148,7 +176,7 @@ export async function POST(request) {
     }
 
     if (!candidate.content || !candidate.content.parts) {
-      console.error('Invalid candidate structure:', JSON.stringify(candidate, null, 2));
+      logger.error('Invalid candidate structure', { hasContent: !!candidate.content });
       throw new Error('Invalid response structure from API');
     }
 
@@ -169,7 +197,7 @@ export async function POST(request) {
     // ==================== PHASE 2A: DEDUCT CREDIT ====================
 
     // Deduct credit AFTER successful generation (atomic operation)
-    console.log(`[Credit Deduction] Deducting 1 credit from user ${user.id}`);
+    logger.debug('Credit Deduction - Attempting to deduct credit', { userId: user.id, style });
 
     const { error: deductError } = await supabase.rpc('deduct_credit', {
       p_user_id: user.id,
@@ -178,16 +206,12 @@ export async function POST(request) {
 
     if (deductError) {
       // CRITICAL: Fail-closed approach - don't give image if we can't charge
-      console.error('🚨 [ALERT] CREDIT DEDUCTION FAILURE 🚨');
-      console.error('Action required: Manual review needed');
-      console.error('User ID:', user.id);
-      console.error('Time:', new Date().toISOString());
-      console.error('Error:', deductError);
-      console.error('[CRITICAL] Credit deduction failed but image was generated:', {
+      logger.error('CRITICAL - Credit deduction failed but image was generated', {
         userId: user.id,
         style: style,
         error: deductError.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        alert: 'MANUAL_REVIEW_REQUIRED'
       });
 
       return NextResponse.json(
@@ -200,7 +224,7 @@ export async function POST(request) {
       );
     }
 
-    console.log(`[Credit Deduction] Successfully deducted credit from user ${user.id}`);
+    logger.info('Credit Deduction - Success', { userId: user.id, style });
 
     // Return the generated image as base64 (only if credit was deducted)
     return NextResponse.json({
@@ -210,7 +234,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error generating headshot:', error);
+    logger.error('Error generating headshot', { error: error.message });
     return NextResponse.json(
       {
         error: 'Failed to generate headshot',

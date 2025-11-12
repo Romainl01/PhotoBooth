@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
+import { logger, logPaymentEvent } from '@/lib/logger';
 
 // Lazy initialization to avoid build-time errors when env vars aren't available
 const getStripe = () => {
@@ -36,19 +37,19 @@ export const runtime = 'nodejs';
  * 5. Return 200 to acknowledge receipt
  */
 export async function POST(request) {
-  console.log('[Stripe Webhook] ========== WEBHOOK CALLED ==========');
+  logger.debug('Stripe Webhook - Webhook called');
 
   try {
     // Get raw body for signature verification (Next.js 15 compatible way)
     const rawBody = await request.arrayBuffer();
     const body = Buffer.from(rawBody).toString('utf8');
-    console.log('[Stripe Webhook] Body received, length:', body.length);
+    logger.debug('Stripe Webhook - Body received', { bodyLength: body.length });
 
     const signature = request.headers.get('stripe-signature');
-    console.log('[Stripe Webhook] Signature present:', !!signature);
+    logger.debug('Stripe Webhook - Signature check', { signaturePresent: !!signature });
 
     if (!signature) {
-      console.error('[Stripe Webhook] Missing signature');
+      logger.error('Stripe Webhook - Missing signature');
       return NextResponse.json(
         { error: 'Missing signature' },
         { status: 400 }
@@ -65,21 +66,21 @@ export async function POST(request) {
         process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (err) {
-      console.error('[Stripe Webhook] Signature verification failed:', err.message);
+      logger.error('Stripe Webhook - Signature verification failed', { error: err.message });
       return NextResponse.json(
         { error: `Webhook signature verification failed: ${err.message}` },
         { status: 400 }
       );
     }
 
-    console.log(`[Stripe Webhook] Event received: ${event.type}`);
+    logger.info('Stripe Webhook - Event received', { eventType: event.type });
 
     // Handle different event types
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
 
-        console.log('[Stripe Webhook] Payment successful:', {
+        logPaymentEvent('Payment successful', {
           sessionId: session.id,
           userId: session.metadata.user_id,
           credits: session.metadata.credits,
@@ -91,7 +92,7 @@ export async function POST(request) {
         const packageName = session.metadata.package_name;
 
         if (!userId || !credits) {
-          console.error('[Stripe Webhook] Missing metadata:', session.metadata);
+          logger.error('Stripe Webhook - Missing metadata', { hasUserId: !!userId, hasCredits: !!credits });
           return NextResponse.json(
             { error: 'Missing user_id or credits in metadata' },
             { status: 400 }
@@ -99,26 +100,26 @@ export async function POST(request) {
         }
 
         // Add credits to user account
-        console.log('[Stripe Webhook] Creating Supabase client...');
+        logger.debug('Stripe Webhook - Creating Supabase client');
         const supabase = await createClient();
-        console.log('[Stripe Webhook] Supabase client created');
+        logger.debug('Stripe Webhook - Supabase client created');
 
         // Use RPC function to add credits atomically
-        console.log('[Stripe Webhook] Calling add_credits RPC...');
+        logger.debug('Stripe Webhook - Calling add_credits RPC', { userId, credits, packageName });
         const { error: addCreditsError } = await supabase.rpc('add_credits', {
           p_user_id: userId,
           p_amount: credits,
           p_stripe_payment_id: session.payment_intent,
           p_package_name: packageName,
         });
-        console.log('[Stripe Webhook] RPC call completed');
+        logger.debug('Stripe Webhook - RPC call completed');
 
         if (addCreditsError) {
-          console.error('[Stripe Webhook] Failed to add credits:', addCreditsError);
+          logger.error('Stripe Webhook - Failed to add credits', { error: addCreditsError.message });
 
           // Check if this is a duplicate (already processed)
           if (addCreditsError.message?.includes('already processed')) {
-            console.log('[Stripe Webhook] Duplicate webhook detected - already processed');
+            logger.info('Stripe Webhook - Duplicate webhook detected, already processed');
             // Return 200 to prevent Stripe from retrying
             return NextResponse.json({
               received: true,
@@ -133,13 +134,13 @@ export async function POST(request) {
           );
         }
 
-        console.log(`[Stripe Webhook] Successfully added ${credits} credits to user ${userId}`);
+        logger.info('Stripe Webhook - Credits added successfully', { userId, credits });
         break;
       }
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
-        console.error('[Stripe Webhook] Payment failed:', {
+        logger.warn('Stripe Webhook - Payment failed', {
           paymentIntentId: paymentIntent.id,
           error: paymentIntent.last_payment_error?.message,
         });
@@ -148,13 +149,13 @@ export async function POST(request) {
       }
 
       default:
-        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        logger.debug('Stripe Webhook - Unhandled event type', { eventType: event.type });
     }
 
     // Return 200 to acknowledge receipt
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('[Stripe Webhook] Error processing webhook:', error);
+    logger.error('Stripe Webhook - Error processing webhook', { error: error.message });
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }

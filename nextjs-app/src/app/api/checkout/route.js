@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 // Lazy initialization to avoid build-time errors when env vars aren't available
 const getStripe = () => {
@@ -19,9 +21,10 @@ const getStripe = () => {
  *
  * Flow:
  * 1. Verify user is authenticated
- * 2. Validate price_id exists in database
- * 3. Create Stripe checkout session with user metadata
- * 4. Return checkout URL to frontend
+ * 2. Rate limit check
+ * 3. Validate price_id exists in database
+ * 4. Create Stripe checkout session with user metadata
+ * 5. Return checkout URL to frontend
  *
  * Request body:
  * {
@@ -40,14 +43,40 @@ export async function POST(request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.error('[Checkout] Unauthorized:', authError?.message);
+      logger.error('Checkout - Unauthorized', { error: authError?.message });
       return NextResponse.json(
         { error: 'Unauthorized. Please sign in to purchase credits.' },
         { status: 401 }
       );
     }
 
-    // 2. Parse request
+    // 2. Rate Limiting - Prevent Stripe session spam
+    const { success: rateLimitOk, limit, remaining, reset } = await checkRateLimit(user.id, 'checkout');
+
+    if (!rateLimitOk) {
+      logger.warn('Rate Limit - Checkout limit exceeded', { userId: user.id, limit, remaining });
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `You can create ${limit} checkout sessions per hour. Please try again later.`,
+          limit,
+          remaining,
+          resetAt: new Date(reset).toISOString(),
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': limit.toString(),
+            'X-RateLimit-Remaining': remaining.toString(),
+            'X-RateLimit-Reset': reset.toString(),
+          },
+        }
+      );
+    }
+
+    logger.debug('Rate Limit - Check passed', { remaining, limit });
+
+    // 3. Parse request
     const { priceId } = await request.json();
 
     if (!priceId) {
@@ -57,7 +86,7 @@ export async function POST(request) {
       );
     }
 
-    // 3. Validate price exists in our database (security check)
+    // 4. Validate price exists in our database (security check)
     const { data: package_data, error: pkgError } = await supabase
       .from('credit_packages')
       .select('*')
@@ -66,16 +95,16 @@ export async function POST(request) {
       .single();
 
     if (pkgError || !package_data) {
-      console.error('[Checkout] Invalid price ID:', priceId);
+      logger.error('Checkout - Invalid price ID', { priceId });
       return NextResponse.json(
         { error: 'Invalid price ID' },
         { status: 400 }
       );
     }
 
-    console.log(`[Checkout] Creating session for user ${user.id}, package: ${package_data.name}`);
+    logger.debug('Checkout - Creating session', { userId: user.id, package: package_data.name });
 
-    // 4. Create Stripe Checkout Session
+    // 5. Create Stripe Checkout Session
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -97,11 +126,11 @@ export async function POST(request) {
       },
     });
 
-    console.log(`[Checkout] Session created: ${session.id}`);
+    logger.info('Checkout - Session created', { sessionId: session.id, userId: user.id });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error('[Checkout] Error creating session:', error);
+    logger.error('Checkout - Error creating session', { error: error.message });
     return NextResponse.json(
       {
         error: 'Failed to create checkout session',
