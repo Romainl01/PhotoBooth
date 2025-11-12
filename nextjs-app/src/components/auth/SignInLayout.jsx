@@ -71,6 +71,7 @@ export default function SignInLayout() {
 
   return (
     <main className="
+      sign-in-page
       min-h-screen
       bg-[#e3e3e3]
       flex

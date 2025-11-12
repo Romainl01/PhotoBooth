@@ -48,21 +48,38 @@ export default function ShowcaseTV({
             h-[338px] md:h-[456px]
             w-full
           "
-          style={{ overflow: 'hidden', isolation: 'isolate' }}
+          style={{
+            overflow: 'hidden',
+            isolation: 'isolate',
+            WebkitTransform: 'translate3d(0,0,0)',
+            transform: 'translate3d(0,0,0)',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden'
+          }}
         >
-          {/* Dynamic Content (VHSPlayback, etc.) or Static Image */}
-          {children ? (
-            children
-          ) : imageSrc ? (
-            <Image
-              src={imageSrc}
-              alt={alt}
-              fill
-              className="object-cover"
-              priority
-              sizes="(max-width: 768px) 338px, 800px"
-            />
-          ) : null}
+          {/* Inner clipping wrapper for Safari mobile compatibility */}
+          <div
+            className="absolute inset-0 rounded-[32px]"
+            style={{
+              overflow: 'hidden',
+              WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+              maskImage: 'radial-gradient(white, black)',
+            }}
+          >
+            {/* Dynamic Content (VHSPlayback, etc.) or Static Image */}
+            {children ? (
+              children
+            ) : imageSrc ? (
+              <Image
+                src={imageSrc}
+                alt={alt}
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 768px) 338px, 800px"
+              />
+            ) : null}
+          </div>
 
           {/* Layered Shadow Effects for Depth */}
           <div className="

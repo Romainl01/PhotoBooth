@@ -64,9 +64,22 @@ export default function VHSPlayback({ images }) {
   if (!images || images.length === 0) return null;
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div
+      className="relative w-full h-full flex items-center justify-center"
+      style={{
+        WebkitTransform: 'translate3d(0,0,0)',
+        transform: 'translate3d(0,0,0)',
+        contain: 'paint layout style'
+      }}
+    >
       {/* VHS Container */}
-      <div className="relative w-full h-full rounded-lg" style={{ overflow: 'hidden' }}>
+      <div
+        className="relative w-full h-full rounded-lg"
+        style={{
+          overflow: 'hidden',
+          isolation: 'isolate'
+        }}
+      >
         {/* Photo Container with color bleeding */}
         <div
           className={`relative w-full h-full bg-black color-bleed ${

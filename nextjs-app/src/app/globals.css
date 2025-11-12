@@ -2,11 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fix mobile white background gaps */
+/* Fix mobile background color - Safari shows html bg behind browser UI */
 html {
-  background-color: #e3e3e3;
+  background-color: #242424 !important; /* Default dark background */
   height: 100%;
   height: -webkit-fill-available; /* Safari support */
+}
+
+/* Light gray background for sign-in page, dark for camera pages */
+html:has(.sign-in-page) {
+  background-color: #e3e3e3 !important;
 }
 
 body {

@@ -34,6 +34,7 @@ const crimsonPro = Crimson_Pro({
 export const metadata = {
   title: "Morpheo - AI Photobooth",
   description: "Transform your photos with AI-powered creative filters",
+  themeColor: '#242424', // Dark background color for Safari UI chrome
   icons: {
     icon: [
       { url: '/logo.svg', type: 'image/svg+xml' },
