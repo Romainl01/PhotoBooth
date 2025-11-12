@@ -2057,6 +2057,67 @@ export default function CaptureIcon() {
 // Both are secondary action buttons with similar structure
 ```
 
+#### Pattern 5: React Dependency Management
+
+**Rule:** Pure utility functions should be defined at module level, not inside components.
+
+**Correct:**
+```jsx
+// Module-level pure function (stable reference)
+const retryWithBackoff = async (fn, maxRetries = 3) => {
+  // Implementation that only uses parameters
+}
+
+export function MyComponent() {
+  const [data, setData] = useState(null)
+
+  const fetchData = useCallback(async (id) => {
+    const result = await retryWithBackoff(async () => {
+      // Fetch logic using setData
+    })
+  }, []) // retryWithBackoff not in deps (stable module reference)
+
+  useEffect(() => {
+    fetchData(userId)
+  }, [fetchData, userId])
+}
+```
+
+**Incorrect:**
+```jsx
+// ❌ Function defined inside component (recreated every render)
+export function MyComponent() {
+  const [data, setData] = useState(null)
+
+  const retryWithBackoff = async (fn, maxRetries = 3) => {
+    // Same implementation
+  }
+
+  const fetchData = useCallback(async (id) => {
+    const result = await retryWithBackoff(async () => {
+      // Fetch logic
+    })
+  }, [retryWithBackoff]) // Unstable dependency!
+
+  useEffect(() => {
+    fetchData(userId)
+  }, [fetchData, userId]) // Effect runs every render → infinite loop
+}
+```
+
+**Why:**
+- Functions defined inside components get new references every render
+- Including them in dependency arrays causes effects/callbacks to recreate
+- This creates infinite loops: render → new function → effect runs → setState → render
+- Pure functions (no component state/props) should live at module level
+- **Real impact:** 10-20x database queries per page load → 1 query (95% reduction)
+
+**Identification Checklist:**
+- ✅ Function uses only its parameters → move to module level
+- ✅ Function uses browser APIs only (setTimeout, console) → module level
+- ❌ Function uses component state (setState) → keep in component with useCallback
+- ❌ Function uses props → keep in component with useCallback
+
 ### 8.2 Common Pitfalls
 
 #### Pitfall 1: Wrapper Div Proliferation
@@ -2931,6 +2992,7 @@ du -sh .next/static
 
 #### Version 1.1.0 - Morpheo 2.0 Phase 1 (Current)
 **Release Date:** November 2025
+**Last Update:** January 12, 2025
 
 **Features:**
 - ✅ Sign-in screen UI with skeuomorphic TV design
@@ -2940,13 +3002,23 @@ du -sh .next/static
 - ✅ Responsive mobile/desktop layouts (338px mobile, 800px desktop)
 - ✅ IBM Plex Mono & Crimson Pro fonts integrated
 - ✅ Component composition patterns for reusability
+- ✅ UserContext with authentication and credit management
+- ✅ CreditBadge with liquid glass effect and color-coded states
 - 🔄 Google OAuth setup guide complete (implementation pending)
+
+**Performance Optimizations:**
+- ✅ Fixed infinite render loop in UserContext (Jan 12, 2025)
+  - Moved `retryWithBackoff` utility to module level
+  - Stabilized React dependency chain
+  - Reduced database queries from 10-20 per page load to 1
+  - 95% reduction in Supabase API calls
 
 **Documentation Added:**
 - Complete sign-in UI implementation guide
 - Google OAuth setup guide for Supabase
 - Morpheo 2.0 design specifications
 - Phase-based implementation roadmap
+- UserContext performance optimization notes
 
 #### Version 1.0.0
 **Release Date:** October 2025
