@@ -23,22 +23,24 @@
  * 3. Update database via Supabase SQL editor
  */
 
-// Validate environment variables on import
-const requiredEnvVars = [
-  'NEXT_PUBLIC_STRIPE_PRICE_STARTER',
-  'NEXT_PUBLIC_STRIPE_PRICE_CREATOR',
-  'NEXT_PUBLIC_STRIPE_PRICE_PRO',
-];
+// Validate environment variables on import (server-side only)
+if (typeof window === 'undefined') {
+  const requiredEnvVars = [
+    'NEXT_PUBLIC_STRIPE_PRICE_STARTER',
+    'NEXT_PUBLIC_STRIPE_PRICE_CREATOR',
+    'NEXT_PUBLIC_STRIPE_PRICE_PRO',
+  ];
 
-const missingEnvVars = requiredEnvVars.filter(
-  (varName) => !process.env[varName]
-);
-
-if (missingEnvVars.length > 0) {
-  throw new Error(
-    `Missing required environment variables: ${missingEnvVars.join(', ')}\n` +
-    'Please add them to your .env.local file (for local dev) or Vercel environment variables (for production).'
+  const missingEnvVars = requiredEnvVars.filter(
+    (varName) => !process.env[varName]
   );
+
+  if (missingEnvVars.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingEnvVars.join(', ')}\n` +
+      'Please add them to your .env.local file (for local dev) or Vercel environment variables (for production).'
+    );
+  }
 }
 
 export const DEFAULT_CREDIT_PACKAGES = [
