@@ -2,9 +2,15 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-11-20.acacia',
-});
+// Lazy initialization to avoid build-time errors when env vars aren't available
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY is not configured');
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-11-20.acacia',
+  });
+};
 
 // Configure route for webhooks
 export const dynamic = 'force-dynamic';
@@ -50,6 +56,7 @@ export async function POST(request) {
     }
 
     // Verify webhook signature
+    const stripe = getStripe();
     let event;
     try {
       event = stripe.webhooks.constructEvent(
@@ -108,7 +115,18 @@ export async function POST(request) {
 
         if (addCreditsError) {
           console.error('[Stripe Webhook] Failed to add credits:', addCreditsError);
-          // Return 500 so Stripe retries the webhook
+
+          // Check if this is a duplicate (already processed)
+          if (addCreditsError.message?.includes('already processed')) {
+            console.log('[Stripe Webhook] Duplicate webhook detected - already processed');
+            // Return 200 to prevent Stripe from retrying
+            return NextResponse.json({
+              received: true,
+              message: 'Duplicate webhook - already processed'
+            });
+          }
+
+          // Other errors - return 500 so Stripe retries
           return NextResponse.json(
             { error: 'Failed to add credits' },
             { status: 500 }
