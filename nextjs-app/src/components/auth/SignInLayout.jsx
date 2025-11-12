@@ -21,7 +21,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import MorpheoLogo from './MorpheoLogo';
 import ShowcaseTV from './ShowcaseTV';
@@ -31,6 +31,15 @@ import GoogleButton from './GoogleButton';
 export default function SignInLayout() {
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
+
+  // Set gray background for Safari mobile (html element shows behind browser UI)
+  useEffect(() => {
+    document.documentElement.style.backgroundColor = '#e3e3e3';
+
+    return () => {
+      document.documentElement.style.backgroundColor = '#242424';
+    };
+  }, []);
 
   // Showcase images
   const showcaseImages = [
@@ -71,7 +80,6 @@ export default function SignInLayout() {
 
   return (
     <main className="
-      sign-in-page
       min-h-screen
       bg-[#e3e3e3]
       flex
