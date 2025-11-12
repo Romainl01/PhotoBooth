@@ -1,7 +1,7 @@
 # MORPHEO - Product & Technical Documentation
 
-**Version:** 1.1.0 - Morpheo 2.0 Phase 1
-**Last Updated:** November 10, 2025
+**Version:** 2.0.0 - Production Payment System
+**Last Updated:** November 12, 2025
 **Live URL:** https://morpheo-phi.vercel.app/
 
 ---
@@ -2377,6 +2377,16 @@ KV_REST_API_TOKEN=your_upstash_redis_token
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `GOOGLE_API_KEY` | Google GenAI API key | `AIzaSyD...` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | `eyJhbGc...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | `eyJhbGc...` |
+| `STRIPE_SECRET_KEY` | Stripe secret key (live) | `sk_live_...` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (live) | `pk_live_...` |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | `whsec_...` |
+| `NEXT_PUBLIC_STRIPE_PRICE_STARTER` | Stripe price ID for Starter package | `price_...` |
+| `NEXT_PUBLIC_STRIPE_PRICE_CREATOR` | Stripe price ID for Creator package | `price_...` |
+| `NEXT_PUBLIC_STRIPE_PRICE_PRO` | Stripe price ID for Pro package | `price_...` |
+| `NEXT_PUBLIC_APP_URL` | Production app URL | `https://morpheo-phi.vercel.app` |
 
 #### Optional Variables
 
@@ -2385,12 +2395,23 @@ KV_REST_API_TOKEN=your_upstash_redis_token
 | `KV_REST_API_URL` | Upstash Redis URL | Rate limiting |
 | `KV_REST_API_TOKEN` | Upstash Redis token | Rate limiting |
 
+#### Environment-Based Configuration
+
+Morpheo uses environment variables to support different configurations for local development (test mode) and production (live mode):
+
+- **Local Development:** Uses test Stripe keys and test price IDs from `.env.local`
+- **Production/Preview:** Uses live Stripe keys and production price IDs from Vercel environment variables
+
+**See:** [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) for complete production deployment guide.
+
 #### Security Best Practices
 
 1. **Never Commit Secrets:** Keep `.env.local` in `.gitignore`
 2. **Rotate Keys Regularly:** Update API keys every 90 days
 3. **Use Vercel Secrets:** Store sensitive data in Vercel dashboard
 4. **Restrict API Keys:** Limit Google API key to specific domains
+5. **Separate Test/Live Keys:** Never use production Stripe keys in development
+6. **Webhook Security:** Verify webhook signatures using `STRIPE_WEBHOOK_SECRET`
 
 ### 9.4 SEO & Social Sharing
 
