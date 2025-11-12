@@ -13,6 +13,12 @@
  * - Light gray background (#e3e3e3)
  * - 32px horizontal padding
  *
+ * Showcase Images:
+ * - Responsive image selection based on viewport
+ * - Desktop (≥768px): 9 landscape photos from /showcase/desktop/
+ * - Mobile (<768px): 8 portrait photos from /showcase/mobile/
+ * - Dynamic switching on resize using matchMedia
+ *
  * Authentication:
  * - Google OAuth via Supabase
  * - Redirects to /auth/callback after consent
@@ -32,17 +38,26 @@ export default function SignInLayout() {
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
 
-  // Set gray background for Safari mobile (html element shows behind browser UI)
+  // Ensure gray background for Safari mobile (already default, but set for client-side nav)
   useEffect(() => {
     document.documentElement.style.backgroundColor = '#e3e3e3';
-
-    return () => {
-      document.documentElement.style.backgroundColor = '#242424';
-    };
   }, []);
 
-  // Showcase images
-  const showcaseImages = [
+  // Desktop showcase images (768px+)
+  const desktopShowcaseImages = [
+    '/showcase/desktop/morpheo-photo-1761176875650.jpg',
+    '/showcase/desktop/morpheo-photo-1761231588775.jpg',
+    '/showcase/desktop/morpheo-photo-1761239184895.jpg',
+    '/showcase/desktop/morpheo-photo-1761593485876.jpg',
+    '/showcase/desktop/morpheo-photo-1761652384030.jpg',
+    '/showcase/desktop/morpheo-photo-1761652591619.jpg',
+    '/showcase/desktop/morpheo-photo-1762967157364.jpg',
+    '/showcase/desktop/morpheo-photo-1762967211271.jpg',
+    '/showcase/desktop/morpheo-photo-1762967328177.jpg',
+  ];
+
+  // Mobile showcase images (<768px)
+  const mobileShowcaseImages = [
     '/showcase/mobile/Mobile Kill Bill Emma.png',
     '/showcase/mobile/Mobile Kill Bill Thomas.png',
     '/showcase/mobile/Mobile Lord Romain.png',
@@ -50,7 +65,28 @@ export default function SignInLayout() {
     '/showcase/mobile/Mobile Star Wars Thomas.png',
     '/showcase/mobile/Mobile Star Wars Valentin.png',
     '/showcase/mobile/Mobile Zombie Samy.png',
+    '/showcase/mobile/Samy.jpeg',
   ];
+
+  // Viewport detection for responsive image selection
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Detect viewport size and handle resize
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+
+    // Set initial value
+    setIsDesktop(mediaQuery.matches);
+
+    // Update on resize
+    const handleChange = (e) => setIsDesktop(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Select images based on viewport
+  const showcaseImages = isDesktop ? desktopShowcaseImages : mobileShowcaseImages;
 
   const handleGoogleSignIn = async () => {
     try {

@@ -2992,7 +2992,7 @@ du -sh .next/static
 
 #### Version 1.1.0 - Morpheo 2.0 Phase 1 (Current)
 **Release Date:** November 2025
-**Last Update:** January 12, 2025
+**Last Update:** November 12, 2025
 
 **Features:**
 - ✅ Sign-in screen UI with skeuomorphic TV design
@@ -3000,6 +3000,11 @@ du -sh .next/static
 - ✅ ShowcaseTV component with layered shadow effects
 - ✅ GoogleButton component (styled, auth integration pending)
 - ✅ Responsive mobile/desktop layouts (338px mobile, 800px desktop)
+- ✅ Responsive showcase images with VHS playback effect
+  - Desktop (≥768px): 9 landscape photos from `/showcase/desktop/`
+  - Mobile (<768px): 8 portrait photos from `/showcase/mobile/`
+  - Dynamic viewport detection using `matchMedia`
+  - Auto-rotate with VHS glitch effects
 - ✅ IBM Plex Mono & Crimson Pro fonts integrated
 - ✅ Component composition patterns for reusability
 - ✅ UserContext with authentication and credit management
