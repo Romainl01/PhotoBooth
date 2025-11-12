@@ -66,7 +66,7 @@ export default function VHSPlayback({ images }) {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* VHS Container */}
-      <div className="relative w-full h-full overflow-hidden rounded-lg">
+      <div className="relative w-full h-full rounded-lg" style={{ overflow: 'hidden' }}>
         {/* Photo Container with color bleeding */}
         <div
           className={`relative w-full h-full bg-black color-bleed ${

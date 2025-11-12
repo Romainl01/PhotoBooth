@@ -45,10 +45,10 @@ export default function ShowcaseTV({
             rounded-[32px]
             border-[1px] border-black/40
             shadow-[0px_4px_4px_0px_rgba(255,255,255,0.15),0px_4px_4px_0px_rgba(0,0,0,0.25)]
-            overflow-hidden
             h-[338px] md:h-[456px]
             w-full
           "
+          style={{ overflow: 'hidden', isolation: 'isolate' }}
         >
           {/* Dynamic Content (VHSPlayback, etc.) or Static Image */}
           {children ? (
