@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { DEFAULT_CREDIT_PACKAGES } from '@/lib/creditPackages';
 
 /**
  * GET /api/credit-packages
  *
  * Returns all active credit packages from the database
+ * Falls back to DEFAULT_CREDIT_PACKAGES if database fails
  * Used by PaywallModal to display purchase options
  *
  * Response:
@@ -32,10 +34,8 @@ export async function GET() {
 
     return NextResponse.json({ packages });
   } catch (error) {
-    console.error('[credit-packages] Error fetching packages:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch credit packages' },
-      { status: 500 }
-    );
+    console.error('[credit-packages] Error fetching packages, using fallback:', error);
+    // Return constants as fallback to ensure consistent pricing
+    return NextResponse.json({ packages: DEFAULT_CREDIT_PACKAGES });
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import SkeuomorphicRectButton from '@/components/ui/SkeuomorphicRectButton'
 import CaptureIcon from '@/components/icons/CaptureIcon'
+import { DEFAULT_CREDIT_PACKAGES } from '@/lib/creditPackages'
 
 /**
  * PaywallModal - Blocks camera when user has 0 credits
@@ -16,10 +17,15 @@ import CaptureIcon from '@/components/icons/CaptureIcon'
  * - Motivational copy: "Don't stop now! Your best picture might be next"
  * - 3 credit package buttons: Starter (10), Creator (30), Pro (100)
  *
+ * Performance:
+ * - Zero loading state (optimistic UI pattern)
+ * - Initializes with DEFAULT_CREDIT_PACKAGES constants
+ * - Background sync with database for price updates
+ *
  * Props:
  * - onClose: function - Close modal (optional, for backdrop click)
  *
- * Flow:
+ * Purchase Flow:
  * 1. User clicks a credit package button
  * 2. Modal calls /api/checkout with price_id
  * 3. API returns Stripe checkout URL
@@ -28,11 +34,11 @@ import CaptureIcon from '@/components/icons/CaptureIcon'
  * 6. User redirects back to app
  */
 export default function PaywallModal({ onClose }) {
-  const [packages, setPackages] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Initialize with constants for instant UI (zero loading state)
+  const [packages, setPackages] = useState(DEFAULT_CREDIT_PACKAGES)
   const [processingPackageId, setProcessingPackageId] = useState(null)
 
-  // Fetch credit packages from database
+  // Optional: Sync packages from database in background (silently updates if prices change)
   useEffect(() => {
     async function fetchPackages() {
       try {
@@ -42,14 +48,7 @@ export default function PaywallModal({ onClose }) {
         setPackages(data.packages)
       } catch (error) {
         console.error('[PaywallModal] Error fetching packages:', error)
-        // Fallback to hardcoded packages if API fails
-        setPackages([
-          { id: '1', name: 'Starter', emoji: '💫', credits: 10, price_cents: 299, currency: 'EUR', stripe_price_id: 'price_1SS4E8K9cHL77TyOtdNpKgCr' },
-          { id: '2', name: 'Creator', emoji: '🎨', credits: 30, price_cents: 699, currency: 'EUR', stripe_price_id: 'price_1SS4FjK9cHL77TyOJNL1mVLc' },
-          { id: '3', name: 'Pro', emoji: '🏆', credits: 100, price_cents: 1799, currency: 'EUR', stripe_price_id: 'price_1SS4EtK9cHL77TyOS3mtMaHi' },
-        ])
-      } finally {
-        setLoading(false)
+        // No need for fallback - already initialized with hardcoded values
       }
     }
 
@@ -124,25 +123,21 @@ export default function PaywallModal({ onClose }) {
 
           {/* Credit Package Buttons */}
           <div className="flex flex-col gap-4 w-full">
-            {loading ? (
-              <div className="text-white font-ibm-plex-mono text-sm">Loading packages...</div>
-            ) : (
-              packages.map((pkg, index) => (
-                <SkeuomorphicRectButton
-                  key={pkg.id || index}
-                  width={318}
-                  height={56}
-                  gradientId={`paywall-package-${index}`}
-                  onClick={() => handlePurchase(pkg.stripe_price_id, pkg.id)}
-                  disabled={processingPackageId === pkg.id}
-                  className="w-full"
-                >
-                  <span className="font-ibm-plex-mono font-medium text-base text-white">
-                    {pkg.emoji} {pkg.name}: {pkg.credits} images - {formatPrice(pkg.price_cents, pkg.currency)}
-                  </span>
-                </SkeuomorphicRectButton>
-              ))
-            )}
+            {packages.map((pkg, index) => (
+              <SkeuomorphicRectButton
+                key={pkg.id || index}
+                width={318}
+                height={56}
+                gradientId={`paywall-package-${index}`}
+                onClick={() => handlePurchase(pkg.stripe_price_id, pkg.id)}
+                disabled={processingPackageId === pkg.id}
+                className="w-full"
+              >
+                <span className="font-ibm-plex-mono font-medium text-base text-white">
+                  {pkg.emoji} {pkg.name}: {pkg.credits} images - {formatPrice(pkg.price_cents, pkg.currency)}
+                </span>
+              </SkeuomorphicRectButton>
+            ))}
           </div>
         </div>
       </div>

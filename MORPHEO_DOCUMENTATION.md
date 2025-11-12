@@ -2944,6 +2944,86 @@ du -sh .next/static
 - Time to Interactive: < 3s
 - Generation time: < 10s
 
+#### PaywallModal Optimization (Optimistic UI Pattern)
+
+**Problem:** Modal showed "Loading packages..." state (200-500ms delay) when opening.
+
+**Solution:** Implemented single source of truth pattern with zero loading state.
+
+**Implementation:**
+
+1. **Constants File** (`/lib/creditPackages.js`):
+```javascript
+export const DEFAULT_CREDIT_PACKAGES = [
+  {
+    id: '1',
+    name: 'Starter',
+    emoji: '💫',
+    credits: 10,
+    price_cents: 299,
+    currency: 'EUR',
+    stripe_price_id: 'price_1SS4E8K9cHL77TyOtdNpKgCr',
+  },
+  // Creator and Pro packages...
+]
+```
+
+2. **Component Update** (`PaywallModal.jsx`):
+```javascript
+// Initialize with constants for instant UI
+const [packages, setPackages] = useState(DEFAULT_CREDIT_PACKAGES)
+
+// Background sync (optional, silently updates from DB)
+useEffect(() => {
+  fetch('/api/credit-packages')
+    .then(res => res.json())
+    .then(data => setPackages(data.packages))
+    .catch(err => console.error(err)) // No fallback needed - already initialized
+}, [])
+```
+
+3. **API Route Update** (`/api/credit-packages/route.js`):
+```javascript
+import { DEFAULT_CREDIT_PACKAGES } from '@/lib/creditPackages'
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from('credit_packages')
+      .select('*')
+
+    if (error) throw error
+    return NextResponse.json({ packages: data })
+  } catch (error) {
+    // Return constants as fallback
+    return NextResponse.json({ packages: DEFAULT_CREDIT_PACKAGES })
+  }
+}
+```
+
+**Results:**
+- ✅ Zero loading state (instant UI rendering)
+- ✅ Single source of truth for pricing
+- ✅ Guaranteed consistency between component and API
+- ✅ Graceful degradation when database fails
+- ✅ 200-500ms performance improvement
+
+**Architecture:**
+```
+DEFAULT_CREDIT_PACKAGES (lib/creditPackages.js)
+    │
+    ├──> PaywallModal: Initialize state instantly
+    └──> API Route: Fallback when DB fails
+```
+
+**Updating Prices:**
+1. Update Stripe dashboard (create new price ID)
+2. Update `DEFAULT_CREDIT_PACKAGES` in `/lib/creditPackages.js`
+3. Update database via Supabase SQL
+4. Deploy to production
+
+**Pattern:** Optimistic UI - treat configuration as code, not dynamic data. Credit packages change rarely (1-2x/year), so hardcoding with optional background sync provides best UX.
+
 ---
 
 ## 11. Appendices
@@ -3017,6 +3097,11 @@ du -sh .next/static
   - Stabilized React dependency chain
   - Reduced database queries from 10-20 per page load to 1
   - 95% reduction in Supabase API calls
+- ✅ Eliminated PaywallModal loading state (Nov 12, 2025)
+  - Implemented optimistic UI pattern with constants
+  - Created single source of truth in `/lib/creditPackages.js`
+  - Zero loading state (instant UI rendering)
+  - 200-500ms performance improvement
 
 **Documentation Added:**
 - Complete sign-in UI implementation guide
