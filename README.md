@@ -244,18 +244,17 @@ npm start
 
 ---
 
-## 🔐 Production-Ready Features
+## 🔐 Production-Ready Security
 
-Morpheo includes enterprise-grade security and performance features:
+Morpheo includes production-grade security features:
 
-- **Production-Safe Logging** - Environment-aware logging with automatic PII sanitization
-- **Rate Limiting** - Upstash-powered API protection against abuse (10 requests/hour for generation)
-- **Security Headers** - X-Frame-Options, CSP, and other OWASP-recommended headers
+- **Production-Safe Logging** - Environment-aware logging with automatic PII sanitization (user IDs, emails, payment info redacted in production)
+- **Security Headers** - OWASP-recommended headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, etc.)
+- **Credit-Based Protection** - Natural rate limiting through credit system - users can't spam beyond purchased credits
 - **Payment Security** - Stripe webhook signature verification and idempotent processing
-- **Error Boundaries** - Graceful error handling with user-friendly messages
 - **Zero Vulnerabilities** - npm audit clean, all dependencies up-to-date
 
-📖 **[PRODUCTION_SECURITY_GUIDE.md](PRODUCTION_SECURITY_GUIDE.md)** - Complete production setup guide
+See [MORPHEO_DOCUMENTATION.md](MORPHEO_DOCUMENTATION.md) for security implementation details.
 
 ---
 
@@ -264,8 +263,7 @@ Morpheo includes enterprise-grade security and performance features:
 For comprehensive documentation, see:
 
 - **[MORPHEO_DOCUMENTATION.md](MORPHEO_DOCUMENTATION.md)** - Complete technical documentation
-- **[PRODUCTION_SECURITY_GUIDE.md](PRODUCTION_SECURITY_GUIDE.md)** - Production security & performance guide
-- **[PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md)** - Stripe payment production deployment
+- **[PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md)** - Stripe payment production deployment guide
 - **[PROJECT_LEARNINGS.md](docs/PROJECT_LEARNINGS.md)** - Best practices and patterns
 
 ---

@@ -3,7 +3,6 @@ import { GoogleGenAI } from '@google/genai';
 import { STYLE_PROMPTS } from '@/constants/stylePrompts';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
-import { checkRateLimit } from '@/lib/ratelimit';
 
 // Initialize Google GenAI
 const ai = new GoogleGenAI({
@@ -28,33 +27,8 @@ export async function POST(request) {
 
     logger.debug('Auth Check - User authenticated', { userId: user.id });
 
-    // 2. Rate Limiting - Prevent API abuse and quota exhaustion
-    const { success: rateLimitOk, limit, remaining, reset } = await checkRateLimit(user.id, 'generation');
-
-    if (!rateLimitOk) {
-      logger.warn('Rate Limit - Generation limit exceeded', { userId: user.id, limit, remaining });
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          message: `You can generate ${limit} images per hour. Please try again later.`,
-          limit,
-          remaining,
-          resetAt: new Date(reset).toISOString(),
-        },
-        {
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': reset.toString(),
-          },
-        }
-      );
-    }
-
-    logger.debug('Rate Limit - Check passed', { remaining, limit });
-
-    // 3. Check credits BEFORE generation (saves Gemini API costs)
+    // 2. Check credits BEFORE generation (saves Gemini API costs)
+    // Note: Credit system provides natural rate limiting - users can't spam beyond their credits
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits')
@@ -71,7 +45,7 @@ export async function POST(request) {
 
     logger.debug('Credit Check - User credits', { credits: profile.credits });
 
-    // 4. Block if insufficient credits (402 = Payment Required)
+    // 3. Block if insufficient credits (402 = Payment Required)
     if (profile.credits < 1) {
       logger.info('Credit Check - Insufficient credits, blocking generation');
       return NextResponse.json(
