@@ -86,11 +86,42 @@ export async function POST(request) {
       },
     ];
 
-    // Call Google GenAI API
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: contents,
-    });
+    // Call Google GenAI API with quota error handling
+    let response
+    try {
+      response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: contents,
+      });
+    } catch (apiError) {
+      console.error('Gemini API error:', apiError)
+
+      // Check for quota/rate limit errors
+      if (
+        apiError.status === 429 ||
+        apiError.message?.includes('quota') ||
+        apiError.message?.includes('rate limit') ||
+        apiError.code === 'RESOURCE_EXHAUSTED'
+      ) {
+        console.error('[QUOTA EXCEEDED] Gemini API quota exceeded:', {
+          userId: user.id,
+          timestamp: new Date().toISOString(),
+          error: apiError.message
+        })
+
+        return NextResponse.json(
+          {
+            error: 'Service temporarily at capacity',
+            message: 'Our AI service is experiencing high demand. Please try again in a few minutes. Your credit was NOT used.',
+            retryAfter: 60
+          },
+          { status: 503 }
+        )
+      }
+
+      // Re-throw other errors
+      throw apiError
+    }
 
     // Validate response structure
     if (!response || !response.candidates || response.candidates.length === 0) {
@@ -146,19 +177,32 @@ export async function POST(request) {
     });
 
     if (deductError) {
-      console.error('[Credit Deduction] Failed to deduct credit:', deductError);
-      // Don't fail the request - user got their image
-      // Log for manual reconciliation
+      // CRITICAL: Fail-closed approach - don't give image if we can't charge
+      console.error('🚨 [ALERT] CREDIT DEDUCTION FAILURE 🚨');
+      console.error('Action required: Manual review needed');
+      console.error('User ID:', user.id);
+      console.error('Time:', new Date().toISOString());
+      console.error('Error:', deductError);
       console.error('[CRITICAL] Credit deduction failed but image was generated:', {
         userId: user.id,
         style: style,
-        error: deductError.message
+        error: deductError.message,
+        timestamp: new Date().toISOString()
       });
-    } else {
-      console.log(`[Credit Deduction] Successfully deducted credit from user ${user.id}`);
+
+      return NextResponse.json(
+        {
+          error: 'Failed to process your request',
+          message: 'Unable to complete generation. Your credit was NOT deducted. Please try again.',
+          technical: deductError.message
+        },
+        { status: 500 }
+      );
     }
 
-    // Return the generated image as base64
+    console.log(`[Credit Deduction] Successfully deducted credit from user ${user.id}`);
+
+    // Return the generated image as base64 (only if credit was deducted)
     return NextResponse.json({
       success: true,
       image: `data:image/png;base64,${generatedImageData}`,

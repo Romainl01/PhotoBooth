@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
+import { createClient } from '@/lib/supabase/client'
 import CameraScreen from '@/components/screens/CameraScreen'
 import ResultScreen from '@/components/screens/ResultScreen'
 import CameraAccessError from '@/components/screens/CameraAccessError'
@@ -37,6 +38,9 @@ export default function Home() {
   const [capturedImage, setCapturedImage] = useState(null)
   const [generatedImage, setGeneratedImage] = useState(null)
 
+  // Generation lock (prevent race condition from multiple rapid clicks)
+  const [isGenerating, setIsGenerating] = useState(false)
+
   // Camera refs
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -49,6 +53,15 @@ export default function Home() {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
   }, [])
 
+  // Set dark background for camera page (Safari mobile fix)
+  useEffect(() => {
+    document.documentElement.style.backgroundColor = '#242424';
+
+    return () => {
+      document.documentElement.style.backgroundColor = '#e3e3e3';
+    };
+  }, []);
+
   // Phase 2B: Handle Stripe payment redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
@@ -56,16 +69,33 @@ export default function Home() {
 
     if (paymentStatus === 'success') {
       console.log('[Payment] Payment successful! Refreshing credits...')
-      // Refresh credits to get updated balance
-      refreshCredits()
-      // Clean up URL (remove query params)
-      window.history.replaceState({}, '', '/')
-      // TODO: Show custom success modal/toast here if desired
+
+      // Poll for credits update (webhook might take 1-3 seconds)
+      let pollCount = 0
+      const maxPolls = 5 // Poll up to 5 times
+
+      const pollInterval = setInterval(async () => {
+        console.log(`[Payment] Polling credits (attempt ${pollCount + 1}/${maxPolls})`)
+        await refreshCredits()
+        pollCount++
+
+        if (pollCount >= maxPolls) {
+          clearInterval(pollInterval)
+          console.log('[Payment] Stopped polling after', pollCount, 'attempts')
+        }
+      }, 2000) // Poll every 2 seconds
+
+      // Clean up URL (remove query params) after a short delay
+      setTimeout(() => {
+        window.history.replaceState({}, '', '/')
+      }, 3000)
+
+      // Cleanup interval on unmount
+      return () => clearInterval(pollInterval)
     } else if (paymentStatus === 'cancelled') {
       console.log('[Payment] Payment cancelled by user')
       // Clean up URL
       window.history.replaceState({}, '', '/')
-      // TODO: Show custom error modal/toast here if desired
     }
   }, [refreshCredits])
 
@@ -114,6 +144,12 @@ export default function Home() {
 
   // Capture photo
   const handleCapture = async () => {
+    // Guard: Prevent multiple simultaneous generations (race condition)
+    if (isGenerating) {
+      console.log('[Capture] Already generating, ignoring click')
+      return
+    }
+
     if (!videoRef.current || !canvasRef.current) return
 
     const video = videoRef.current
@@ -222,6 +258,9 @@ export default function Home() {
       return
     }
 
+    // Lock generation to prevent race condition
+    setIsGenerating(true)
+
     // Show loading screen immediately
     setCurrentScreen(SCREENS.LOADING)
 
@@ -229,6 +268,16 @@ export default function Home() {
     console.log('Generating with style:', style, 'Image data length:', imageData.length)
 
     try {
+      // Refresh session before API call (prevent session expiry mid-generation)
+      const supabase = createClient()
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
+
+      if (refreshError) {
+        console.error('[Session] Failed to refresh session:', refreshError)
+        throw new Error('Your session expired. Please sign in again.')
+      }
+
+      console.log('[Session] Token refreshed successfully')
       const response = await fetch('/api/generate-headshot', {
         method: 'POST',
         headers: {
@@ -272,6 +321,9 @@ export default function Home() {
     } catch (error) {
       console.error('Error generating image:', error)
       setCurrentScreen(SCREENS.API_ERROR)
+    } finally {
+      // Always unlock generation, even if there was an error
+      setIsGenerating(false)
     }
   }
 
@@ -331,6 +383,7 @@ export default function Home() {
             onUpload={handleUpload}
             videoRef={videoRef}
             canvasRef={canvasRef}
+            isGenerating={isGenerating}
           />
         )}
 

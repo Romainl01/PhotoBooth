@@ -4,7 +4,7 @@
 
 /* Fix mobile background color - Safari shows html bg behind browser UI */
 html {
-  background-color: #242424; /* Default dark background (sign-in page overrides via JS) */
+  background-color: #e3e3e3; /* Gray default for sign-in page (camera page overrides via JS) */
   height: 100%;
   height: -webkit-fill-available; /* Safari support */
 }

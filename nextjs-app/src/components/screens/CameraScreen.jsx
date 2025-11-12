@@ -32,6 +32,7 @@ export default function CameraScreen({
   onUpload,
   videoRef,
   canvasRef,
+  isGenerating = false,
 }) {
   const fileInputRef = useRef(null);
   const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
@@ -55,6 +56,11 @@ export default function CameraScreen({
   };
 
   const handleUploadClick = () => {
+    // Prevent upload if already generating
+    if (isGenerating) {
+      console.log('[Upload] Already generating, ignoring click')
+      return
+    }
     // Check credits before allowing upload
     if (!checkCredits()) return;
     fileInputRef.current?.click();
@@ -68,6 +74,11 @@ export default function CameraScreen({
   };
 
   const handleCaptureClick = () => {
+    // Prevent capture if already generating
+    if (isGenerating) {
+      console.log('[Capture] Already generating, ignoring click')
+      return
+    }
     // Check credits before allowing capture
     if (!checkCredits()) return;
     onCapture();
