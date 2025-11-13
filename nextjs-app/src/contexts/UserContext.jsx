@@ -113,7 +113,21 @@ export function UserProvider({ children }) {
     if (session?.user?.id) {
       console.log('[UserContext] Got fresh session, fetching profile for user:', session.user.id)
       const result = await fetchProfile(session.user.id)
-      console.log('[UserContext] refreshCredits completed, new credits:', result?.credits)
+
+      // If profile still doesn't exist after refresh, set optimistic default
+      if (!result) {
+        console.log('[UserContext] Profile not found during refresh, setting optimistic default')
+        setProfile({
+          id: session.user.id,
+          email: session.user.email,
+          credits: 5,
+          total_generated: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+      }
+
+      console.log('[UserContext] refreshCredits completed, new credits:', result?.credits || 5)
       return result
     } else {
       console.warn('[UserContext] refreshCredits called but no active session found')
@@ -167,7 +181,21 @@ export function UserProvider({ children }) {
         setUser(session?.user ?? null)
 
         if (session?.user) {
-          await fetchProfile(session.user.id)
+          const result = await fetchProfile(session.user.id)
+
+          // If profile doesn't exist (new user, timing issue, or DB error),
+          // set optimistic default to prevent showing 0 credits
+          if (!result) {
+            console.log('[UserContext] Profile not found, setting optimistic default for new user')
+            setProfile({
+              id: session.user.id,
+              email: session.user.email,
+              credits: 5, // Default starting credits
+              total_generated: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          }
         } else {
           // User signed out
           setProfile(null)

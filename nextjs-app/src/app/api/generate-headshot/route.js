@@ -29,14 +29,39 @@ export async function POST(request) {
 
     // 2. Check credits BEFORE generation (saves Gemini API costs)
     // Note: Credit system provides natural rate limiting - users can't spam beyond their credits
-    const { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile) {
-      logger.error('Credit Check - Profile not found', { error: profileError?.message });
+    // If profile doesn't exist (new user, DB trigger failed), create it
+    if (profileError && profileError.code === 'PGRST116') {
+      logger.info('Credit Check - Profile not found, creating new profile', { userId: user.id });
+
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          credits: 5, // Default starting credits
+          total_generated: 0
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        logger.error('Credit Check - Failed to create profile', { error: createError.message });
+        return NextResponse.json(
+          { error: 'Failed to create user profile. Please try again.' },
+          { status: 500 }
+        );
+      }
+
+      profile = newProfile;
+      logger.info('Credit Check - Profile created successfully', { userId: user.id, credits: 5 });
+    } else if (profileError || !profile) {
+      logger.error('Credit Check - Profile error', { error: profileError?.message });
       return NextResponse.json(
         { error: 'User profile not found. Please contact support.' },
         { status: 404 }
