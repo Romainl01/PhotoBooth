@@ -9,6 +9,7 @@ const UserContext = createContext({
   profile: null,
   loading: true,
   refreshCredits: async () => {},
+  updateCredits: (credits) => {},
 })
 
 /**
@@ -77,11 +78,6 @@ export function UserProvider({ children }) {
           .eq('id', userId)
           .single()
 
-        // 🔍 DEBUG: Log the raw response
-        console.log('🔍 [DEBUG] Supabase response:', { data, error, userId })
-        console.log('🔍 [DEBUG] Credits value:', data?.credits)
-        console.log('🔍 [DEBUG] Full profile data:', JSON.stringify(data, null, 2))
-
         if (error) {
           console.error('[UserContext] Error fetching profile:', error)
           return null
@@ -109,62 +105,64 @@ export function UserProvider({ children }) {
    * Public API for components to trigger manual refresh
    */
   const refreshCredits = useCallback(async () => {
-    if (user?.id) {
-      return await fetchProfile(user.id)
+    console.log('[UserContext] refreshCredits called')
+
+    // Don't rely on stale user state - get fresh session
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (session?.user?.id) {
+      console.log('[UserContext] Got fresh session, fetching profile for user:', session.user.id)
+      const result = await fetchProfile(session.user.id)
+      console.log('[UserContext] refreshCredits completed, new credits:', result?.credits)
+      return result
+    } else {
+      console.warn('[UserContext] refreshCredits called but no active session found')
     }
-  }, [user, fetchProfile])
+  }, [supabase, fetchProfile])
+
+  /**
+   * Update credits directly without fetching from DB
+   * Use when you already have the authoritative credit count (e.g., from API response)
+   * @param {number} credits - The new credit count
+   */
+  const updateCredits = useCallback((credits) => {
+    console.log('[UserContext] updateCredits called with:', credits)
+
+    if (typeof credits !== 'number') {
+      console.warn('[UserContext] updateCredits called with non-number value:', credits)
+      return
+    }
+
+    setProfile(prev => {
+      if (!prev) {
+        console.warn('[UserContext] Cannot update credits - no profile exists')
+        return prev
+      }
+      return { ...prev, credits }
+    })
+  }, [])
 
   // Initialize: Get initial session and set up auth listener
   useEffect(() => {
     let mounted = true
+    let initialLoadHandled = false
 
-    // Fetch session with timeout and retry logic
-    const fetchSessionWithTimeout = async () => {
-      const sessionPromise = supabase.auth.getSession()
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
-      )
-
-      const { data: { session }, error } = await Promise.race([
-        sessionPromise,
-        timeoutPromise
-      ])
-
-      if (error) throw error
-      return session
-    }
-
-    // Get initial session with retry logic
-    const initializeSession = async () => {
-      try {
-        // Retry session fetch up to 3 times with backoff
-        const session = await retryWithBackoff(fetchSessionWithTimeout, 3)
-
-        if (!mounted) return
-
-        setUser(session?.user ?? null)
-
-        if (session?.user) {
-          // IMPORTANT: Await profile fetch before clearing loading state
-          await fetchProfile(session.user.id)
-        }
-
+    // Safety timeout: if nothing happens after 10s, stop loading
+    const safetyTimeout = setTimeout(() => {
+      if (!initialLoadHandled && mounted) {
+        console.log('[UserContext] Safety timeout reached, clearing loading state')
         setLoading(false)
-      } catch (error) {
-        console.error('[UserContext] Initialization error after retries:', error)
-        if (mounted) {
-          // Even on error, clear loading state to prevent infinite spinner
-          setLoading(false)
-        }
+        initialLoadHandled = true
       }
-    }
-
-    initializeSession()
+    }, 10000)
 
     // Listen for auth changes (sign in, sign out, token refresh)
+    // This fires immediately on mount with current session if one exists
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return
+
+        console.log('[UserContext] Auth state change:', _event, session ? 'session exists' : 'no session')
 
         setUser(session?.user ?? null)
 
@@ -174,6 +172,13 @@ export function UserProvider({ children }) {
           // User signed out
           setProfile(null)
         }
+
+        // Mark initial load as handled and clear loading
+        if (!initialLoadHandled) {
+          setLoading(false)
+          initialLoadHandled = true
+          clearTimeout(safetyTimeout)
+        }
       }
     )
 
@@ -182,28 +187,11 @@ export function UserProvider({ children }) {
     // This ensures we refresh credits instead of showing stale/frozen state
     const handlePageShow = async (event) => {
       if (event.persisted) {
-        // Page was restored from bfcache, refresh the session
-        try {
-          const { data: { session }, error } = await supabase.auth.getSession()
-
-          if (!mounted) return
-
-          if (error) {
-            console.error('[UserContext] bfcache session error:', error)
-            setLoading(false)
-            return
-          }
-
-          if (session?.user) {
-            // IMPORTANT: Await profile fetch before clearing loading state
-            await fetchProfile(session.user.id)
-          }
-          setLoading(false)
-        } catch (error) {
-          console.error('[UserContext] bfcache restore error:', error)
-          if (mounted) {
-            setLoading(false)
-          }
+        console.log('[UserContext] Page restored from bfcache, getting fresh session')
+        // Get fresh session to refresh the profile
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user && mounted) {
+          await fetchProfile(session.user.id)
         }
       }
     }
@@ -213,6 +201,7 @@ export function UserProvider({ children }) {
     // Cleanup subscription on unmount
     return () => {
       mounted = false
+      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
       window.removeEventListener('pageshow', handlePageShow)
     }
@@ -223,6 +212,7 @@ export function UserProvider({ children }) {
     profile,
     loading,
     refreshCredits,
+    updateCredits,
     profileError,
   }
 

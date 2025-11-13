@@ -200,11 +200,27 @@ export async function POST(request) {
 
     logger.info('Credit Deduction - Success', { userId: user.id, style });
 
+    // Fetch updated credit count to return to client (eliminates need for async refresh)
+    const { data: updatedProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('credits')
+      .eq('id', user.id)
+      .single();
+
+    if (fetchError) {
+      logger.warn('Failed to fetch updated credits after deduction', { error: fetchError.message });
+      // Non-critical: Still return the image, client will refresh credits via fallback
+    }
+
+    const newCredits = updatedProfile?.credits ?? null;
+    logger.debug('Returning updated credit count', { newCredits });
+
     // Return the generated image as base64 (only if credit was deducted)
     return NextResponse.json({
       success: true,
       image: `data:image/png;base64,${generatedImageData}`,
-      style: style
+      style: style,
+      credits: newCredits // Include new credit count for immediate UI update
     });
 
   } catch (error) {

@@ -48,11 +48,6 @@ export default function CreditBadge({ className = '' }) {
   const credits = profile?.credits ?? 0
   const totalGenerated = profile?.total_generated ?? 0
 
-  // 🔍 DEBUG: Log what CreditBadge receives
-  console.log('🔍 [DEBUG] CreditBadge - profile:', profile)
-  console.log('🔍 [DEBUG] CreditBadge - credits:', credits)
-  console.log('🔍 [DEBUG] CreditBadge - profile.credits:', profile?.credits)
-
   /**
    * Get badge text color based on credit count
    * Matches Figma designs exactly

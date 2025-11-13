@@ -26,7 +26,7 @@ const SCREENS = {
 
 export default function Home() {
   // Phase 2A: User context for credit management
-  const { refreshCredits } = useUser()
+  const { refreshCredits, updateCredits } = useUser()
 
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState(SCREENS.CAMERA)
@@ -325,14 +325,18 @@ export default function Home() {
         setGeneratedImage(data.image)
         setCurrentScreen(SCREENS.RESULT)
 
-        // Phase 2A: Refresh credits after successful generation
-        // This updates the UI to show new credit count
-        // Non-blocking: Let credits refresh in background to prevent UI hanging
-        console.log('[Generate] Success - refreshing credits')
-        refreshCredits().catch(err => {
-          console.warn('[Generate] Credit refresh failed (non-critical):', err)
-          // User still sees their generated image, credits will sync on next interaction
-        })
+        // Phase 2A: Update credits from API response (synchronous, guaranteed consistency)
+        // API returns the new credit count after deduction, eliminating race conditions
+        if (typeof data.credits === 'number') {
+          console.log('[Generate] Success - updating credits to:', data.credits)
+          updateCredits(data.credits)
+        } else {
+          // Fallback: API didn't return credits (backward compatibility or error)
+          console.warn('[Generate] API did not return credits, falling back to async refresh')
+          refreshCredits().catch(err => {
+            console.warn('[Generate] Credit refresh failed (non-critical):', err)
+          })
+        }
       } else {
         console.error('Generation failed:', data.error)
         setCurrentScreen(SCREENS.API_ERROR)
@@ -375,6 +379,13 @@ export default function Home() {
     setCapturedImage(null)
     setGeneratedImage(null)
     setCurrentScreen(SCREENS.CAMERA)
+
+    // Safety fallback: Refresh credits when returning to camera
+    // This ensures UI consistency even if API didn't return credits or user session changed
+    // Non-blocking to prevent UI lag
+    refreshCredits().catch(err => {
+      console.warn('[NewPhoto] Credit refresh failed (non-critical):', err)
+    })
   }
 
   // Share callback - primarily handled by ResultScreen's Web Share API
