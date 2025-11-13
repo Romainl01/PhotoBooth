@@ -449,6 +449,143 @@ The static "Loading..." text during Google API calls (10-20 seconds) created a p
 
 ---
 
+## 🔐 Authentication & Middleware Race Conditions
+
+### Date: 2025-11-13
+### Bug Fix: Logout Redirecting to Camera Instead of Sign-In
+
+**Challenge Encountered:**
+When users clicked the logout button in SettingsDrawer, they were immediately redirected back to the camera screen instead of landing on the sign-in page. This created a confusing UX where the logout appeared to fail.
+
+**Root Cause Analysis:**
+
+The bug was caused by a **race condition** between three components:
+
+1. **SettingsDrawer.jsx (lines 43-54):** Logout handler called `supabase.auth.signOut()` but didn't wait for completion
+   ```javascript
+   // ❌ WRONG: Non-blocking logout
+   supabase.auth.signOut().catch(err => { ... })
+   window.location.href = '/sign-in'  // Immediate redirect
+   ```
+
+2. **middleware.js (lines 62-67):** Middleware intercepts all route changes and redirects authenticated users away from `/sign-in`
+   ```javascript
+   // Prevents logged-in users from accessing sign-in page
+   if (user && request.nextUrl.pathname === '/sign-in') {
+     url.pathname = '/'  // Redirect to camera
+     return NextResponse.redirect(url)
+   }
+   ```
+
+3. **Execution order:**
+   - Logout button clicked → `signOut()` starts (async)
+   - Redirect to `/sign-in` happens **immediately** (before signOut completes)
+   - Middleware runs → still sees authenticated user (session not cleared yet)
+   - Middleware bounces user back to `/` (camera screen)
+
+**Why This Happened:**
+
+The original code included comments suggesting this was an **intentional optimization**:
+- "Start sign out but don't wait for it - redirect immediately"
+- "Force immediate redirect - let middleware handle the rest"
+
+The developer **assumed** middleware would handle cleanup, but **missed** that middleware also prevents authenticated users from accessing `/sign-in`. This created the exact opposite behavior needed.
+
+**Technical Decisions Made:**
+
+**✅ CORRECT FIX:**
+```javascript
+const handleLogout = async () => {
+  try {
+    // Wait for sign out to complete before redirecting
+    // This prevents middleware from seeing stale auth state
+    await supabase.auth.signOut()
+    console.log('[SettingsDrawer] Sign out successful')
+  } catch (err) {
+    // Log error but continue with redirect
+    // Middleware will handle any remaining session cleanup
+    console.error('[SettingsDrawer] Sign out error:', err)
+  }
+
+  // Redirect to sign-in page after session is cleared
+  window.location.href = '/sign-in'
+}
+```
+
+**Solutions Applied:**
+
+1. **Await the signOut call** - Ensures session is fully cleared before redirect
+2. **Try-catch wrapper** - Gracefully handles errors (still redirects even if signOut fails)
+3. **Preserved logging** - Console messages help debug auth flow in production
+
+**Key Learnings:**
+
+1. **Middleware Timing Matters:**
+   - Middleware runs **between** your redirect call and page render
+   - If session state hasn't updated yet, middleware sees stale data
+   - Order matters: **clear session → THEN redirect**
+
+2. **Race Conditions in Auth Flows:**
+   - Async operations like `signOut()` need time to complete (~200-500ms)
+   - "Fire and forget" patterns break when middleware checks auth state
+   - **Always await auth state changes** before navigation
+
+3. **Performance vs Correctness:**
+   - Original code optimized for perceived speed (immediate redirect)
+   - Sacrificed correctness (created broken UX)
+   - 200-500ms delay is imperceptible to users
+   - **Correct behavior > micro-optimizations**
+
+4. **Middleware as Double-Edged Sword:**
+   - Middleware protects routes from unauthorized access ✅
+   - Middleware also redirects authorized users away from auth pages ✅
+   - Both behaviors are correct individually
+   - **Must ensure auth state is accurate before triggering middleware logic**
+
+5. **Comment Assumptions Can Mislead:**
+   - "Let middleware handle the rest" sounded reasonable
+   - Developer didn't verify what "the rest" actually meant
+   - **Always validate assumptions about framework behavior**
+
+**Testing Checklist for Auth Flows:**
+
+Before implementing auth-related redirects:
+
+- [ ] Does the session state update **before** the redirect?
+- [ ] Have you tested the middleware's behavior for this specific route?
+- [ ] Are there any race conditions between async auth calls and navigation?
+- [ ] Does the error handling still redirect users appropriately?
+- [ ] Have you verified this works on both fast and slow network conditions?
+
+**Related Files:**
+- `nextjs-app/src/components/modals/SettingsDrawer.jsx` (logout handler)
+- `nextjs-app/src/middleware.js` (route protection logic)
+- `nextjs-app/src/lib/supabase/middleware.js` (session refresh & user check)
+
+**Future Improvements to Consider:**
+
+1. **Add loading state during logout:**
+   - Show spinner or "Logging out..." message
+   - Prevents users from clicking logout multiple times
+   - Makes the slight delay feel intentional
+
+2. **Client-side session clearing:**
+   - Clear local storage/cookies immediately
+   - Then await server-side signOut
+   - Provides instant feedback while being safe
+
+3. **Centralized auth helpers:**
+   - Create `authHelpers.js` with properly sequenced auth flows
+   - Prevents repeating this pattern incorrectly elsewhere
+   - Single source of truth for logout logic
+
+**References:**
+- [Supabase Auth signOut](https://supabase.com/docs/reference/javascript/auth-signout)
+- [Next.js Middleware](https://nextjs.org/docs/app/building-your-application/routing/middleware)
+- [Race Conditions in JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#race_conditions)
+
+---
+
 ## 🔄 When to Update This Document
 
 Add to this document when you:
@@ -460,5 +597,5 @@ Add to this document when you:
 
 ---
 
-*Last updated: 2025-11-02*
+*Last updated: 2025-11-13*
 *Project: NanoBanana Skeumorphic Camera App*

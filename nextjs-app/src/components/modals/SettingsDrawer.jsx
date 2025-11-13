@@ -43,12 +43,18 @@ export default function SettingsDrawer({ isOpen, onClose }) {
   const handleLogout = async () => {
     console.log('[SettingsDrawer] Logging out user...')
 
-    // Start sign out but don't wait for it - redirect immediately
-    supabase.auth.signOut().catch(err => {
-      console.error('[SettingsDrawer] Sign out error (non-blocking):', err)
-    })
+    try {
+      // Wait for sign out to complete before redirecting
+      // This prevents middleware from seeing stale auth state
+      await supabase.auth.signOut()
+      console.log('[SettingsDrawer] Sign out successful')
+    } catch (err) {
+      // Log error but continue with redirect
+      // Middleware will handle any remaining session cleanup
+      console.error('[SettingsDrawer] Sign out error:', err)
+    }
 
-    // Force immediate redirect - let middleware handle the rest
+    // Redirect to sign-in page after session is cleared
     console.log('[SettingsDrawer] Redirecting to sign-in...')
     window.location.href = '/sign-in'
   }
