@@ -23,9 +23,9 @@ const nextConfig = {
           },
           {
             // Restrict access to browser features (camera, mic, geolocation)
-            // Note: This doesn't affect getUserMedia() - users still get browser prompts
+            // camera=(self) allows same-origin camera access - required for photo capture
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(self), microphone=(), geolocation=()',
           },
           {
             // Enable browser XSS protection (legacy, but doesn't hurt)
