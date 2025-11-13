@@ -118,27 +118,29 @@ export function UserProvider({ children }) {
   useEffect(() => {
     let mounted = true
 
-    // Get initial session with timeout to prevent infinite loading
+    // Fetch session with timeout and retry logic
+    const fetchSessionWithTimeout = async () => {
+      const sessionPromise = supabase.auth.getSession()
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+      )
+
+      const { data: { session }, error } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ])
+
+      if (error) throw error
+      return session
+    }
+
+    // Get initial session with retry logic
     const initializeSession = async () => {
       try {
-        // Add 5 second timeout to prevent hanging
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
-        )
-
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ])
+        // Retry session fetch up to 3 times with backoff
+        const session = await retryWithBackoff(fetchSessionWithTimeout, 3)
 
         if (!mounted) return
-
-        if (error) {
-          console.error('[UserContext] Session error:', error)
-          setLoading(false)
-          return
-        }
 
         setUser(session?.user ?? null)
 
@@ -149,7 +151,7 @@ export function UserProvider({ children }) {
 
         setLoading(false)
       } catch (error) {
-        console.error('[UserContext] Initialization error:', error)
+        console.error('[UserContext] Initialization error after retries:', error)
         if (mounted) {
           // Even on error, clear loading state to prevent infinite spinner
           setLoading(false)
