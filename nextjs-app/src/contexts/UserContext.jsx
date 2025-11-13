@@ -77,6 +77,11 @@ export function UserProvider({ children }) {
           .eq('id', userId)
           .single()
 
+        // 🔍 DEBUG: Log the raw response
+        console.log('🔍 [DEBUG] Supabase response:', { data, error, userId })
+        console.log('🔍 [DEBUG] Credits value:', data?.credits)
+        console.log('🔍 [DEBUG] Full profile data:', JSON.stringify(data, null, 2))
+
         if (error) {
           console.error('[UserContext] Error fetching profile:', error)
           return null
