@@ -66,17 +66,25 @@ export function UserProvider({ children }) {
   const supabase = createClient()
 
   /**
-   * Fetch user's profile from database (with retry logic)
+   * Fetch user's profile from database (with retry logic and timeout)
    * @param {string} userId - Supabase auth user ID
    */
   const fetchProfile = useCallback(async (userId) => {
     const result = await retryWithBackoff(async () => {
       try {
-        const { data, error } = await supabase
+        // Add 5s timeout to prevent query from hanging forever after OAuth redirect
+        // (JWT token may not be fully propagated immediately after sign-in)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Query timeout')), 5000)
+        )
+
+        const queryPromise = supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .single()
+
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise])
 
         if (error) {
           console.error('[UserContext] Error fetching profile:', error)
@@ -84,13 +92,13 @@ export function UserProvider({ children }) {
         }
 
         setProfile(data)
-        setProfileError(null) // Clear any previous errors
+        setProfileError(null)
         return data
       } catch (error) {
         console.error('[UserContext] Unexpected error fetching profile:', error)
         return null
       }
-    }, 3) // 3 retry attempts
+    }, 3) // 3 retry attempts with exponential backoff
 
     if (!result) {
       console.error('[UserContext] Failed to fetch profile after retries')
@@ -175,9 +183,9 @@ export function UserProvider({ children }) {
 
         // Mark initial load as handled and clear loading
         if (!initialLoadHandled) {
-          setLoading(false)
           initialLoadHandled = true
           clearTimeout(safetyTimeout)
+          setLoading(false)
         }
       }
     )
