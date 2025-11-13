@@ -270,14 +270,29 @@ export default function Home() {
     try {
       // Refresh session before API call (prevent session expiry mid-generation)
       const supabase = createClient()
-      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
 
-      if (refreshError) {
-        console.error('[Session] Failed to refresh session:', refreshError)
-        throw new Error('Your session expired. Please sign in again.')
+      // Add timeout to prevent hanging indefinitely (10 second timeout)
+      const refreshPromise = supabase.auth.refreshSession()
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Session refresh timeout after 10s')), 10000)
+      )
+
+      try {
+        const { data: { session }, error: refreshError } = await Promise.race([
+          refreshPromise,
+          timeoutPromise
+        ])
+
+        if (refreshError) {
+          console.warn('[Session] Failed to refresh session:', refreshError)
+          console.log('[Session] Proceeding with API call anyway...')
+        } else {
+          console.log('[Session] Token refreshed successfully')
+        }
+      } catch (timeoutError) {
+        // Session refresh timed out - proceed anyway and let API call handle auth
+        console.warn('[Session] Refresh timed out, proceeding with API call:', timeoutError.message)
       }
-
-      console.log('[Session] Token refreshed successfully')
       const response = await fetch('/api/generate-headshot', {
         method: 'POST',
         headers: {
@@ -312,8 +327,12 @@ export default function Home() {
 
         // Phase 2A: Refresh credits after successful generation
         // This updates the UI to show new credit count
+        // Non-blocking: Let credits refresh in background to prevent UI hanging
         console.log('[Generate] Success - refreshing credits')
-        await refreshCredits()
+        refreshCredits().catch(err => {
+          console.warn('[Generate] Credit refresh failed (non-critical):', err)
+          // User still sees their generated image, credits will sync on next interaction
+        })
       } else {
         console.error('Generation failed:', data.error)
         setCurrentScreen(SCREENS.API_ERROR)
