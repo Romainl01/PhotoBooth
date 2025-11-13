@@ -19,7 +19,6 @@ import FilterSelector from '../ui/FilterSelector';
 import CreditBadge from '../ui/CreditBadge';
 import PaywallModal from '../modals/PaywallModal';
 import SettingsDrawer from '../modals/SettingsDrawer';
-import InfoModal from '../ui/InfoModal';
 import CaptureIcon from '../icons/CaptureIcon';
 import UploadIcon from '../icons/UploadIcon';
 import SwitchCameraIcon from '../icons/SwitchCameraIcon';
@@ -36,7 +35,6 @@ export default function CameraScreen({
 }) {
   const fileInputRef = useRef(null);
   const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   // Phase 2A: Credit system integration
   const { profile } = useUser();
@@ -93,14 +91,6 @@ export default function CameraScreen({
 
   const handleSettingsClick = () => {
     setShowSettings(true);
-  };
-
-  const handleInfoClick = () => {
-    setIsInfoModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsInfoModalOpen(false);
   };
 
   return (
@@ -179,9 +169,6 @@ export default function CameraScreen({
         {/* Bottom Spacer (for iPhone home indicator area) - hidden on desktop */}
         <div className="h-[40px] w-full bg-background md:hidden" />
       </div>
-
-      {/* Info Modal - Desktop only (kept for backward compatibility) */}
-      <InfoModal isOpen={isInfoModalOpen} onClose={handleCloseModal} />
 
       {/* Phase 2B: Paywall Modal - Shows when credits = 0, handles Stripe checkout internally */}
       {showPaywall && (

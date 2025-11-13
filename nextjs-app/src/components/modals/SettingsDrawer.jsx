@@ -72,7 +72,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
    */
   const handleContactMe = () => {
     // User mentioned this is already coded and links to LinkedIn
-    window.open('https://www.linkedin.com/in/romain-lagrange/', '_blank')
+    window.open('https://www.linkedin.com/in/romain-lagrange1/', '_blank')
   }
 
   // Don't render if not open
