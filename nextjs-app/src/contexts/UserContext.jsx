@@ -72,10 +72,10 @@ export function UserProvider({ children }) {
   const fetchProfile = useCallback(async (userId) => {
     const result = await retryWithBackoff(async () => {
       try {
-        // Add 5s timeout to prevent query from hanging forever after OAuth redirect
+        // Add 2s timeout to prevent query from hanging forever after OAuth redirect
         // (JWT token may not be fully propagated immediately after sign-in)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Query timeout')), 5000)
+          setTimeout(() => reject(new Error('Query timeout')), 2000)
         )
 
         const queryPromise = supabase
