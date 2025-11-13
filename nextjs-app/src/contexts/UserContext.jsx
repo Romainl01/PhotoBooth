@@ -127,7 +127,7 @@ export function UserProvider({ children }) {
 
     // Listen for auth changes (sign in, sign out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         if (!mounted) return
 
         setUser(session?.user ?? null)
@@ -141,10 +141,30 @@ export function UserProvider({ children }) {
       }
     )
 
+    // Handle bfcache (back/forward cache) restore
+    // When user navigates back from Stripe, browser may restore page from cache
+    // This ensures we refresh credits instead of showing stale/frozen state
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        console.log('[UserContext] Page restored from bfcache - refreshing session')
+        // Page was restored from bfcache, refresh the session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!mounted) return
+          if (session?.user) {
+            fetchProfile(session.user.id)
+          }
+          setLoading(false)
+        })
+      }
+    }
+
+    window.addEventListener('pageshow', handlePageShow)
+
     // Cleanup subscription on unmount
     return () => {
       mounted = false
       subscription.unsubscribe()
+      window.removeEventListener('pageshow', handlePageShow)
     }
   }, [supabase, fetchProfile])
 

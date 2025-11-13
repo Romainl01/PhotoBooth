@@ -1,11 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
 import SkeuomorphicRectButton from '@/components/ui/SkeuomorphicRectButton'
 import IconButton from '@/components/ui/IconButton'
 import CloseIcon from '@/components/icons/CloseIcon'
+import PaywallModal from '@/components/modals/PaywallModal'
 
 /**
  * SettingsDrawer - Full-screen settings panel with user info and actions
@@ -33,6 +35,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
   const router = useRouter()
   const { user, profile } = useUser()
   const supabase = createClient()
+  const [showPaywallModal, setShowPaywallModal] = useState(false)
 
   /**
    * Handle logout - sign out and redirect to sign-in page
@@ -51,12 +54,11 @@ export default function SettingsDrawer({ isOpen, onClose }) {
   }
 
   /**
-   * Handle buy credits - placeholder for Phase 2B
+   * Handle buy credits - opens PaywallModal
    */
   const handleBuyCredits = () => {
-    // TODO Phase 2B: Navigate to Stripe checkout
-    console.log('[SettingsDrawer] Buy credits clicked - Stripe integration pending')
-    alert('Payment integration coming soon! 💳')
+    console.log('[SettingsDrawer] Opening paywall modal')
+    setShowPaywallModal(true)
   }
 
   /**
@@ -196,6 +198,11 @@ export default function SettingsDrawer({ isOpen, onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Paywall Modal - rendered above settings drawer */}
+      {showPaywallModal && (
+        <PaywallModal onClose={() => setShowPaywallModal(false)} />
+      )}
     </div>
   )
 }
