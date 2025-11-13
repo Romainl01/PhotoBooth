@@ -92,6 +92,7 @@ export function UserProvider({ children }) {
     }, 3) // 3 retry attempts
 
     if (!result) {
+      console.error('[UserContext] Failed to fetch profile after retries')
       setProfileError('Unable to load your profile. Please refresh the page.')
     }
 
@@ -112,18 +113,46 @@ export function UserProvider({ children }) {
   useEffect(() => {
     let mounted = true
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return
+    // Get initial session with timeout to prevent infinite loading
+    const initializeSession = async () => {
+      try {
+        // Add 5 second timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+        )
 
-      setUser(session?.user ?? null)
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ])
 
-      if (session?.user) {
-        fetchProfile(session.user.id)
+        if (!mounted) return
+
+        if (error) {
+          console.error('[UserContext] Session error:', error)
+          setLoading(false)
+          return
+        }
+
+        setUser(session?.user ?? null)
+
+        if (session?.user) {
+          // IMPORTANT: Await profile fetch before clearing loading state
+          await fetchProfile(session.user.id)
+        }
+
+        setLoading(false)
+      } catch (error) {
+        console.error('[UserContext] Initialization error:', error)
+        if (mounted) {
+          // Even on error, clear loading state to prevent infinite spinner
+          setLoading(false)
+        }
       }
+    }
 
-      setLoading(false)
-    })
+    initializeSession()
 
     // Listen for auth changes (sign in, sign out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -144,17 +173,31 @@ export function UserProvider({ children }) {
     // Handle bfcache (back/forward cache) restore
     // When user navigates back from Stripe, browser may restore page from cache
     // This ensures we refresh credits instead of showing stale/frozen state
-    const handlePageShow = (event) => {
+    const handlePageShow = async (event) => {
       if (event.persisted) {
-        console.log('[UserContext] Page restored from bfcache - refreshing session')
         // Page was restored from bfcache, refresh the session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession()
+
           if (!mounted) return
+
+          if (error) {
+            console.error('[UserContext] bfcache session error:', error)
+            setLoading(false)
+            return
+          }
+
           if (session?.user) {
-            fetchProfile(session.user.id)
+            // IMPORTANT: Await profile fetch before clearing loading state
+            await fetchProfile(session.user.id)
           }
           setLoading(false)
-        })
+        } catch (error) {
+          console.error('[UserContext] bfcache restore error:', error)
+          if (mounted) {
+            setLoading(false)
+          }
+        }
       }
     }
 
