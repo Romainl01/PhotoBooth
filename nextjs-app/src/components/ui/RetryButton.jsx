@@ -18,6 +18,7 @@ export default function RetryButton({ onClick, children = 'Retry', className = '
       gradientId="retry-button-gradient"
       onClick={onClick}
       className={className}
+      data-testid="retry-button"
     >
       <span
         style={{

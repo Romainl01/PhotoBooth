@@ -1,0 +1,32 @@
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./tests/setup.js'],
+    include: [
+      './tests/unit/**/*.{test,spec}.{js,jsx}',
+      './tests/integration/**/*.{test,spec}.{js,jsx}',
+    ],
+    exclude: ['./tests/e2e/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      exclude: [
+        'node_modules/',
+        'tests/',
+        '.next/',
+        '*.config.js',
+      ],
+    },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './nextjs-app'),
+    },
+  },
+});

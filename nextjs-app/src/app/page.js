@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
 import CameraScreen from '@/components/screens/CameraScreen'
@@ -25,8 +26,10 @@ const SCREENS = {
 }
 
 export default function Home() {
-  // Phase 2A: User context for credit management
-  const { refreshCredits, updateCredits } = useUser()
+  const router = useRouter()
+  // Phase 2A: User context for credit management + auth guard
+  const { user, loading, refreshCredits, updateCredits } = useUser()
+  const disableCameraForTests = process.env.NEXT_PUBLIC_E2E_DISABLE_CAMERA === 'true'
 
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState(SCREENS.CAMERA)
@@ -52,6 +55,12 @@ export default function Home() {
   useEffect(() => {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
   }, [])
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/sign-in')
+    }
+  }, [loading, user, router])
 
   // Set dark background for camera page (Safari mobile fix)
   useEffect(() => {
@@ -101,17 +110,20 @@ export default function Home() {
 
   // Initialize camera
   useEffect(() => {
+    if (disableCameraForTests) {
+      return
+    }
+
     if (currentScreen === SCREENS.CAMERA) {
       initializeCamera()
     }
 
     return () => {
-      // Cleanup camera stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
     }
-  }, [currentScreen])
+  }, [currentScreen, disableCameraForTests])
 
   const initializeCamera = async () => {
     try {
@@ -401,6 +413,10 @@ export default function Home() {
   }
 
   // Render current screen
+  if (!loading && !user) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-[402px] md:max-w-none mx-auto h-screen relative">

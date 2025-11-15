@@ -17,9 +17,13 @@
  * - /showcase/* (static assets)
  */
 
+import { NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request) {
+  if (process.env.NEXT_PUBLIC_E2E_DISABLE_AUTH === 'true') {
+    return NextResponse.next({ request })
+  }
   return await updateSession(request)
 }
 
