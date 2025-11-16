@@ -1,13 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
 import SkeuomorphicRectButton from '@/components/ui/SkeuomorphicRectButton'
 import IconButton from '@/components/ui/IconButton'
 import CloseIcon from '@/components/icons/CloseIcon'
 import PaywallModal from '@/components/modals/PaywallModal'
+
+const SUPABASE_AUTH_STORAGE_KEYS = getSupabaseAuthStorageKeys()
+const E2E_USER_STORAGE_KEY = '__e2e_user__'
+const E2E_PROFILE_STORAGE_KEY = '__e2e_profile__'
+const E2E_AUTH_EVENT_NAME = 'e2e-auth-changed'
 
 /**
  * SettingsDrawer - Full-screen settings panel with user info and actions
@@ -32,7 +36,6 @@ import PaywallModal from '@/components/modals/PaywallModal'
  * <SettingsDrawer isOpen={showSettings} onClose={() => setShowSettings(false)} />
  */
 export default function SettingsDrawer({ isOpen, onClose }) {
-  const router = useRouter()
   const { user, profile } = useUser()
   const supabase = createClient()
   const [showPaywallModal, setShowPaywallModal] = useState(false)
@@ -53,6 +56,11 @@ export default function SettingsDrawer({ isOpen, onClose }) {
       // Middleware will handle any remaining session cleanup
       console.error('[SettingsDrawer] Sign out error:', err)
     }
+
+    // Ensure session artifacts are removed even if Supabase is unreachable
+    clearSupabaseLocalStorage()
+    await clearSupabaseCookies()
+    clearE2EAuthState()
 
     // Redirect to sign-in page after session is cleared
     console.log('[SettingsDrawer] Redirecting to sign-in...')
@@ -196,6 +204,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
               gradientId="settings-logout-gradient"
               onClick={handleLogout}
               className="w-full h-[56px]"
+              data-testid="logout-button"
             >
               <span className="font-ibm-plex-mono font-medium text-base text-white">
                 Log out
@@ -211,4 +220,61 @@ export default function SettingsDrawer({ isOpen, onClose }) {
       )}
     </div>
   )
+}
+
+function clearSupabaseLocalStorage() {
+  if (typeof window === 'undefined') return
+
+  try {
+    SUPABASE_AUTH_STORAGE_KEYS.forEach(key => {
+      window.localStorage.removeItem(key)
+    })
+  } catch (error) {
+    console.warn('[SettingsDrawer] Failed to clear auth storage:', error)
+  }
+}
+
+async function clearSupabaseCookies() {
+  try {
+    await fetch('/api/auth/signout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    })
+  } catch (error) {
+    console.warn('[SettingsDrawer] Failed to clear auth cookies:', error)
+  }
+}
+
+function clearE2EAuthState() {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.removeItem(E2E_USER_STORAGE_KEY)
+    window.localStorage.removeItem(E2E_PROFILE_STORAGE_KEY)
+    window.dispatchEvent(new Event(E2E_AUTH_EVENT_NAME))
+  } catch (error) {
+    console.warn('[SettingsDrawer] Failed to clear E2E auth state:', error)
+  }
+}
+
+function getSupabaseAuthStorageKeys() {
+  const keys = ['supabase.auth.token']
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+
+  if (supabaseUrl) {
+    try {
+      const host = new URL(supabaseUrl).host
+      const projectRef = host.split('.')[0]
+      if (projectRef) {
+        keys.push(`sb-${projectRef}-auth-token`)
+      }
+    } catch (error) {
+      console.warn('[SettingsDrawer] Invalid Supabase URL, skipping storage key inference:', error)
+    }
+  }
+
+  return keys
 }

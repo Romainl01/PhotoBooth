@@ -2786,7 +2786,21 @@ If component API changed, update Section 4 of this document.
 - [ ] Share (mobile)
 - [ ] Watermark application
 
-#### Automated Testing (Future)
+#### Automated Testing
+
+**Current Coverage (Jan 2026):**
+- **Vitest integration suites** covering profile loading, credits deduction, Stripe webhooks, and API validation (`npm test`).
+- **Playwright E2E:**
+  1. `tests/e2e/critical/auth-logout.spec.js` – logout clears Supabase session + multi-tab propagation.
+  2. `tests/e2e/critical/image-generation.spec.js` – upload/generate/download happy path, API failure + retry, and zero-credit paywall protection.
+
+Run locally:
+```bash
+npx playwright test          # all E2E flows
+npm run test:all             # Vitest + Playwright
+```
+
+#### Adding More Tests
 
 **Recommended Setup:**
 ```bash

@@ -24,6 +24,7 @@ export default function GoogleButton({ onClick, disabled = false }) {
       onClick={onClick}
       disabled={disabled}
       className="w-full md:w-[800px] h-[56px]"
+      data-testid="sign-in-button"
     >
       <div
         style={{

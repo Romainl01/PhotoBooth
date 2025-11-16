@@ -152,6 +152,7 @@ export default function CameraScreen({
             variant="secondary"
             onClick={handleSettingsClick}
             ariaLabel="Settings"
+            data-testid="user-menu"
           >
             <SettingsIcon className="w-full h-full" />
           </IconButton>

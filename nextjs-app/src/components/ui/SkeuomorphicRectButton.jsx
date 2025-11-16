@@ -26,6 +26,7 @@ export default function SkeuomorphicRectButton({
   className = '',
   disabled = false,
   children,
+  ...props
 }) {
   // Calculate dimensions based on formulas
   const padding = 4;
@@ -53,6 +54,7 @@ export default function SkeuomorphicRectButton({
       `}
       onClick={disabled ? undefined : onClick}
       style={{ display: 'block' }}
+      {...props}
     >
       <defs>
         {/* Linear gradient for border - vertical gradient */}

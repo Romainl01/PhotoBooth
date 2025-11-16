@@ -90,7 +90,7 @@ export default function PaywallModal({ onClose }) {
     return `${amount}${symbol}`
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="paywall-modal">
       {/* Backdrop with blur - dark overlay to dim camera screen */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"

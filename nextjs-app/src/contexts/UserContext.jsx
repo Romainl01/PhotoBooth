@@ -12,6 +12,11 @@ const UserContext = createContext({
   updateCredits: (credits) => {},
 })
 
+const E2E_USER_STORAGE_KEY = '__e2e_user__'
+const E2E_PROFILE_STORAGE_KEY = '__e2e_profile__'
+const E2E_AUTH_EVENT_NAME = 'e2e-auth-changed'
+const isE2ETestMode = process.env.NEXT_PUBLIC_E2E_DISABLE_AUTH === 'true'
+
 /**
  * Retry a function with exponential backoff
  * Pure utility function - moved outside component to prevent unnecessary re-renders
@@ -64,6 +69,7 @@ export function UserProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [profileError, setProfileError] = useState(null)
   const supabase = createClient()
+  const disableAuthForTests = isE2ETestMode
 
   /**
    * Fetch user's profile from database (with retry logic and timeout)
@@ -108,12 +114,46 @@ export function UserProvider({ children }) {
     return result
   }, [supabase])
 
+  useEffect(() => {
+    if (!disableAuthForTests) return undefined
+
+    let mounted = true
+
+    const syncFromStorage = () => {
+      if (!mounted) return
+      const { storedUser, storedProfile } = readE2EAuthState()
+      setUser(storedUser)
+      setProfile(storedProfile)
+      setProfileError(null)
+      setLoading(false)
+    }
+
+    syncFromStorage()
+
+    const handleAuthChange = () => syncFromStorage()
+
+    window.addEventListener(E2E_AUTH_EVENT_NAME, handleAuthChange)
+    window.addEventListener('storage', handleAuthChange)
+
+    return () => {
+      mounted = false
+      window.removeEventListener(E2E_AUTH_EVENT_NAME, handleAuthChange)
+      window.removeEventListener('storage', handleAuthChange)
+    }
+  }, [disableAuthForTests])
+
   /**
    * Refresh credits - call this after purchases or generations
    * Public API for components to trigger manual refresh
    */
   const refreshCredits = useCallback(async () => {
     console.log('[UserContext] refreshCredits called')
+
+    if (disableAuthForTests) {
+      const { storedProfile } = readE2EAuthState()
+      setProfile(storedProfile)
+      return storedProfile
+    }
 
     // Don't rely on stale user state - get fresh session
     const { data: { session } } = await supabase.auth.getSession()
@@ -126,7 +166,7 @@ export function UserProvider({ children }) {
     } else {
       console.warn('[UserContext] refreshCredits called but no active session found')
     }
-  }, [supabase, fetchProfile])
+  }, [disableAuthForTests, supabase, fetchProfile])
 
   /**
    * Update credits directly without fetching from DB
@@ -146,12 +186,18 @@ export function UserProvider({ children }) {
         console.warn('[UserContext] Cannot update credits - no profile exists')
         return prev
       }
-      return { ...prev, credits }
+      const updatedProfile = { ...prev, credits }
+      if (disableAuthForTests) {
+        persistE2EProfile(updatedProfile)
+      }
+      return updatedProfile
     })
-  }, [])
+  }, [disableAuthForTests])
 
   // Initialize: Get initial session and set up auth listener
   useEffect(() => {
+    if (disableAuthForTests) return undefined
+
     let mounted = true
     let initialLoadHandled = false
 
@@ -213,7 +259,7 @@ export function UserProvider({ children }) {
       subscription.unsubscribe()
       window.removeEventListener('pageshow', handlePageShow)
     }
-  }, [supabase, fetchProfile])
+  }, [disableAuthForTests, supabase, fetchProfile])
 
   const value = {
     user,
@@ -250,4 +296,39 @@ export function useUser() {
   }
 
   return context
+}
+
+function readE2EAuthState() {
+  if (typeof window === 'undefined') {
+    return { storedUser: null, storedProfile: null }
+  }
+
+  const storedUser = safeParseJSON(localStorage.getItem(E2E_USER_STORAGE_KEY))
+  const storedProfile = safeParseJSON(localStorage.getItem(E2E_PROFILE_STORAGE_KEY))
+
+  return { storedUser, storedProfile }
+}
+
+function persistE2EProfile(profile) {
+  if (typeof window === 'undefined') return
+
+  try {
+    if (profile) {
+      localStorage.setItem(E2E_PROFILE_STORAGE_KEY, JSON.stringify(profile))
+    } else {
+      localStorage.removeItem(E2E_PROFILE_STORAGE_KEY)
+    }
+    window.dispatchEvent(new Event(E2E_AUTH_EVENT_NAME))
+  } catch (error) {
+    console.warn('[UserContext] Failed to persist E2E profile:', error)
+  }
+}
+
+function safeParseJSON(value) {
+  if (!value) return null
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
 }
