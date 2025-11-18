@@ -17,8 +17,8 @@ export default function HeaderSection() {
     <div className="
       flex
       flex-col
-      gap-[32px]
-      md:gap-[40px]
+      gap-[24px]
+      md:gap-[24px]
       items-center
       w-full
       max-w-[1400px]
@@ -30,7 +30,7 @@ export default function HeaderSection() {
       <div className="
         flex
         flex-col
-        gap-[8px]
+        gap-[4px]
         items-center
         w-full
       ">
