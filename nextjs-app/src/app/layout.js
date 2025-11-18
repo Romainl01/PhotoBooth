@@ -26,7 +26,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 const crimsonPro = Crimson_Pro({
-  weight: ['700'],
+  weight: ['500', '700'],
+  style: ['normal', 'italic'],
   subsets: ["latin"],
   variable: "--font-crimson-pro",
 });

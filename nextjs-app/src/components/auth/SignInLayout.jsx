@@ -29,7 +29,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import MorpheoLogo from './MorpheoLogo';
+import HeaderSection from './HeaderSection';
 import ShowcaseTV from './ShowcaseTV';
 import VHSPlayback from './VHSPlayback';
 import GoogleButton from './GoogleButton';
@@ -122,9 +122,36 @@ export default function SignInLayout() {
       flex-col
       items-center
       justify-center
-      py-[24px]
+      py-[8px]
+      md:py-[12px]
       px-[32px]
+      overflow-x-hidden
+      relative
     ">
+      {/* Fixed Gradient Background - Stays at top during scroll */}
+      <div
+        className="
+          fixed
+          top-0
+          left-0
+          right-0
+          h-[180px]
+          md:h-[240px]
+          bg-gradient-to-b
+          from-[#ffcc53]
+          via-[#ffcc53]/80
+          via-[#ffcc53]/60
+          via-[#ffcc53]/40
+          via-[#ffcc53]/20
+          via-[#ffcc53]/8
+          to-transparent
+          pointer-events-none
+        "
+        style={{
+          zIndex: 0
+        }}
+      />
+
       {/* Content Container */}
       <div className="
         flex
@@ -132,43 +159,12 @@ export default function SignInLayout() {
         gap-[24px]
         items-center
         w-full
-        max-w-[864px]
+        max-w-[1400px]
+        relative
+        z-10
       ">
-        {/* Logo Section */}
-        <MorpheoLogo showRedDot={true} />
-
-        {/* Text Frame - Tagline + Stats */}
-        <div className="
-          flex
-          flex-col
-          gap-[8px]
-          items-center
-          w-full
-          text-center
-        ">
-          {/* Tagline */}
-          <p className="
-            font-['IBM_Plex_Mono']
-            font-semibold
-            text-[16px]
-            leading-[32px]
-            text-black
-          ">
-            One selfie, infinite possibilities
-          </p>
-
-          {/* Stats */}
-          <p className="
-            font-['IBM_Plex_Mono']
-            font-semibold
-            text-[12px]
-            leading-[24px]
-            text-black
-          ">
-            ⚡ 1,576 photos created this week
-            {/* TODO Phase 2: Replace with Supabase query: {weeklyPhotoCount} */}
-          </p>
-        </div>
+        {/* New Header Section with Gradient */}
+        <HeaderSection />
 
         {/* VHS Playback in TV Frame */}
         <ShowcaseTV
