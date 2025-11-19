@@ -37,15 +37,23 @@ export default function CameraScreen({
   const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
 
   // Phase 2A: Credit system integration
-  const { profile } = useUser();
+  const { profile, loading } = useUser();
   const [showPaywall, setShowPaywall] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   /**
    * Check if user has credits before allowing capture/upload
+   * FIXED: Don't show paywall during loading state (prevents false positive)
    * @returns {boolean} True if user has credits, false otherwise
    */
   const checkCredits = () => {
+    // Don't check credits if still loading - prevents false paywall
+    if (loading) {
+      console.log('[CameraScreen] Still loading profile, preventing action')
+      return false
+    }
+
+    // Now safe to check credits (profile is loaded)
     if (!profile || profile.credits < 1) {
       setShowPaywall(true);
       return false;

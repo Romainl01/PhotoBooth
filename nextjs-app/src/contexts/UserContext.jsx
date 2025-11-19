@@ -15,10 +15,11 @@ const UserContext = createContext({
 const E2E_USER_STORAGE_KEY = '__e2e_user__'
 const E2E_PROFILE_STORAGE_KEY = '__e2e_profile__'
 const E2E_AUTH_EVENT_NAME = 'e2e-auth-changed'
+const PROFILE_CACHE_KEY = '__morpheo_profile_cache__'
 const isE2ETestMode = process.env.NEXT_PUBLIC_E2E_DISABLE_AUTH === 'true'
 
 /**
- * Retry a function with exponential backoff
+ * Retry a function with exponential backoff (OPTIMIZED for faster loading)
  * Pure utility function - moved outside component to prevent unnecessary re-renders
  * @param {Function} fn - Async function to retry
  * @param {number} maxRetries - Maximum number of retry attempts
@@ -32,7 +33,8 @@ const retryWithBackoff = async (fn, maxRetries = 3) => {
 
       // If result is null but no error, wait and retry
       if (attempt < maxRetries - 1) {
-        const delay = Math.min(1000 * Math.pow(2, attempt), 8000) // 1s, 2s, 4s, max 8s
+        // OPTIMIZED: Faster delays - 300ms, 600ms, 1200ms (instead of 1s, 2s, 4s)
+        const delay = Math.min(300 * Math.pow(2, attempt), 1200)
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     } catch (error) {
@@ -40,8 +42,8 @@ const retryWithBackoff = async (fn, maxRetries = 3) => {
       if (attempt === maxRetries - 1) {
         throw error // Final attempt failed
       }
-      // Wait before retrying
-      const delay = Math.min(1000 * Math.pow(2, attempt), 8000)
+      // Wait before retrying with faster delays
+      const delay = Math.min(300 * Math.pow(2, attempt), 1200)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
   }
@@ -73,15 +75,16 @@ export function UserProvider({ children }) {
 
   /**
    * Fetch user's profile from database (with retry logic and timeout)
+   * OPTIMIZED: Faster timeout (500ms) and caching for instant reload
    * @param {string} userId - Supabase auth user ID
    */
   const fetchProfile = useCallback(async (userId) => {
     const result = await retryWithBackoff(async () => {
       try {
-        // Add 2s timeout to prevent query from hanging forever after OAuth redirect
-        // (JWT token may not be fully propagated immediately after sign-in)
+        // OPTIMIZED: 500ms timeout (instead of 2s) for faster failure detection
+        // JWT token propagation is usually <500ms after OAuth redirect
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Query timeout')), 2000)
+          setTimeout(() => reject(new Error('Query timeout')), 500)
         )
 
         const queryPromise = supabase
@@ -99,6 +102,10 @@ export function UserProvider({ children }) {
 
         setProfile(data)
         setProfileError(null)
+
+        // OPTIMIZED: Cache profile for instant load on next visit
+        cacheProfile(data)
+
         return data
       } catch (error) {
         console.error('[UserContext] Unexpected error fetching profile:', error)
@@ -145,6 +152,7 @@ export function UserProvider({ children }) {
   /**
    * Refresh credits - call this after purchases or generations
    * Public API for components to trigger manual refresh
+   * OPTIMIZED: Also updates cache
    */
   const refreshCredits = useCallback(async () => {
     console.log('[UserContext] refreshCredits called')
@@ -162,6 +170,7 @@ export function UserProvider({ children }) {
       console.log('[UserContext] Got fresh session, fetching profile for user:', session.user.id)
       const result = await fetchProfile(session.user.id)
       console.log('[UserContext] refreshCredits completed, new credits:', result?.credits)
+      // fetchProfile already caches the result
       return result
     } else {
       console.warn('[UserContext] refreshCredits called but no active session found')
@@ -171,6 +180,7 @@ export function UserProvider({ children }) {
   /**
    * Update credits directly without fetching from DB
    * Use when you already have the authoritative credit count (e.g., from API response)
+   * OPTIMIZED: Also updates cache for consistency
    * @param {number} credits - The new credit count
    */
   const updateCredits = useCallback((credits) => {
@@ -187,6 +197,10 @@ export function UserProvider({ children }) {
         return prev
       }
       const updatedProfile = { ...prev, credits }
+
+      // OPTIMIZED: Update cache to keep it in sync
+      cacheProfile(updatedProfile)
+
       if (disableAuthForTests) {
         persistE2EProfile(updatedProfile)
       }
@@ -200,6 +214,15 @@ export function UserProvider({ children }) {
 
     let mounted = true
     let initialLoadHandled = false
+
+    // OPTIMIZED: Load cached profile immediately for instant display
+    // Background fetch will update with fresh data
+    const cachedProfile = readCachedProfile()
+    if (cachedProfile) {
+      console.log('[UserContext] Loading cached profile for instant display')
+      setProfile(cachedProfile)
+      // Note: loading stays true because we still need fresh data
+    }
 
     // Safety timeout: if nothing happens after 10s, stop loading
     const safetyTimeout = setTimeout(() => {
@@ -223,8 +246,9 @@ export function UserProvider({ children }) {
         if (session?.user) {
           await fetchProfile(session.user.id)
         } else {
-          // User signed out
+          // User signed out - clear profile and cache
           setProfile(null)
+          clearProfileCache() // OPTIMIZED: Clear cache on logout
         }
 
         // Mark initial load as handled and clear loading
@@ -330,5 +354,72 @@ function safeParseJSON(value) {
     return JSON.parse(value)
   } catch {
     return null
+  }
+}
+
+/**
+ * Cache management for profile data (Performance optimization)
+ * Provides instant load on return visits while fetching fresh data in background
+ */
+
+/**
+ * Read cached profile from localStorage
+ * @returns {Object|null} Cached profile or null
+ */
+function readCachedProfile() {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const cached = localStorage.getItem(PROFILE_CACHE_KEY)
+    if (!cached) return null
+
+    const parsed = JSON.parse(cached)
+
+    // Validate cache structure
+    if (!parsed.profile || !parsed.timestamp) return null
+
+    // Optional: Add cache expiry (e.g., 24 hours)
+    // const MAX_AGE = 24 * 60 * 60 * 1000
+    // if (Date.now() - parsed.timestamp > MAX_AGE) return null
+
+    console.log('[Cache] Loaded cached profile:', parsed.profile.credits, 'credits')
+    return parsed.profile
+  } catch (error) {
+    console.warn('[Cache] Failed to read cache:', error)
+    return null
+  }
+}
+
+/**
+ * Cache profile to localStorage
+ * @param {Object} profile - Profile object to cache
+ */
+function cacheProfile(profile) {
+  if (typeof window === 'undefined' || !profile) return
+
+  try {
+    const cacheData = {
+      profile,
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData))
+    console.log('[Cache] Cached profile:', profile.credits, 'credits')
+  } catch (error) {
+    // localStorage might be full or disabled - graceful fallback
+    console.warn('[Cache] Failed to cache profile:', error)
+  }
+}
+
+/**
+ * Clear cached profile (call on logout)
+ */
+function clearProfileCache() {
+  if (typeof window === 'undefined') return
+
+  try {
+    localStorage.removeItem(PROFILE_CACHE_KEY)
+    console.log('[Cache] Cleared profile cache')
+  } catch (error) {
+    console.warn('[Cache] Failed to clear cache:', error)
   }
 }

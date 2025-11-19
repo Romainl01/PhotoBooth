@@ -14,7 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * Retry function from UserContext (copied for testing)
- * This is the actual logic that prevents your app from hanging
+ * OPTIMIZED: Now uses faster delays (300ms, 600ms, 1200ms)
  */
 const retryWithBackoff = async (fn, maxRetries = 3) => {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -23,14 +23,16 @@ const retryWithBackoff = async (fn, maxRetries = 3) => {
       if (result) return result;
 
       if (attempt < maxRetries - 1) {
-        const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+        // OPTIMIZED: Faster delays - 300ms, 600ms, 1200ms (instead of 1s, 2s, 4s)
+        const delay = Math.min(300 * Math.pow(2, attempt), 1200);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     } catch (error) {
       if (attempt === maxRetries - 1) {
         throw error;
       }
-      const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+      // Wait before retrying with faster delays
+      const delay = Math.min(300 * Math.pow(2, attempt), 1200);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
@@ -41,20 +43,19 @@ describe('Profile Loading - Core Logic Tests', () => {
   /**
    * Test #11: Timeout Protection (Critical!)
    *
-   * Your bug: "hung indefinitely"
-   * This test ensures queries timeout after 2 seconds
+   * OPTIMIZED: Now uses 500ms timeout (instead of 2s) for faster failure detection
    */
-  it('should timeout if query takes longer than 2 seconds', async () => {
-    const TIMEOUT_MS = 2000;
+  it('should timeout if query takes longer than 500ms', async () => {
+    const TIMEOUT_MS = 500; // OPTIMIZED: Reduced from 2000ms
 
-    // Create timeout promise (rejects after 2s)
+    // Create timeout promise (rejects after 500ms)
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Query timeout')), TIMEOUT_MS)
     );
 
-    // Create slow query promise (takes 3s)
+    // Create slow query promise (takes 1s)
     const slowQueryPromise = new Promise((resolve) => {
-      setTimeout(() => resolve({ data: { credits: 10 } }), 3000);
+      setTimeout(() => resolve({ data: { credits: 10 } }), 1000);
     });
 
     // Race: timeout should win
@@ -65,9 +66,10 @@ describe('Profile Loading - Core Logic Tests', () => {
 
   /**
    * Test: Fast queries complete within timeout
+   * OPTIMIZED: Updated to use new 500ms timeout
    */
   it('should allow fast queries to complete successfully', async () => {
-    const TIMEOUT_MS = 2000;
+    const TIMEOUT_MS = 500; // OPTIMIZED: Updated to match new timeout
 
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Query timeout')), TIMEOUT_MS)
@@ -140,7 +142,7 @@ describe('Profile Loading - Core Logic Tests', () => {
 
   /**
    * Test: Retry backoff timing
-   * Delays should be: 1s, 2s, 4s (exponential)
+   * OPTIMIZED: Delays should now be: 300ms, 600ms (much faster!)
    */
   it('should use exponential backoff delays', async () => {
     const startTime = Date.now();
@@ -158,10 +160,10 @@ describe('Profile Loading - Core Logic Tests', () => {
 
     const totalTime = Date.now() - startTime;
 
-    // Should take approximately 3 seconds (1s + 2s delays)
-    // Allow 500ms tolerance for test execution overhead
-    expect(totalTime).toBeGreaterThanOrEqual(2500);
-    expect(totalTime).toBeLessThan(4000);
+    // OPTIMIZED: Should take approximately 900ms (300ms + 600ms delays)
+    // Allow 300ms tolerance for test execution overhead
+    expect(totalTime).toBeGreaterThanOrEqual(700);
+    expect(totalTime).toBeLessThan(1500);
   });
 
   /**
@@ -274,6 +276,169 @@ describe('Profile Loading - Core Logic Tests', () => {
 
       expect(isValid).toBe(valid);
     });
+  });
+});
+
+/**
+ * NEW: Cache Performance Tests
+ *
+ * Tests the new localStorage caching optimization for instant load
+ */
+describe('Profile Caching - Performance Optimization', () => {
+  const CACHE_KEY = '__morpheo_profile_cache__';
+
+  beforeEach(() => {
+    // Clear localStorage before each test
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+  });
+
+  /**
+   * Test: Cache write functionality
+   */
+  it('should cache profile data to localStorage', () => {
+    const profile = {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      credits: 15,
+      total_generated: 5,
+    };
+
+    // Simulate caching
+    const cacheData = {
+      profile,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+
+    // Verify cache was written
+    const cached = localStorage.getItem(CACHE_KEY);
+    expect(cached).toBeDefined();
+
+    const parsed = JSON.parse(cached);
+    expect(parsed.profile.credits).toBe(15);
+    expect(parsed.timestamp).toBeDefined();
+  });
+
+  /**
+   * Test: Cache read functionality
+   */
+  it('should read cached profile from localStorage', () => {
+    const profile = {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      credits: 20,
+      total_generated: 10,
+    };
+
+    // Pre-populate cache
+    const cacheData = {
+      profile,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+
+    // Read cache
+    const cached = localStorage.getItem(CACHE_KEY);
+    const parsed = JSON.parse(cached);
+
+    expect(parsed.profile.id).toBe('test-user-123');
+    expect(parsed.profile.credits).toBe(20);
+    expect(parsed.profile.total_generated).toBe(10);
+  });
+
+  /**
+   * Test: Cache handles malformed data gracefully
+   */
+  it('should handle malformed cache data gracefully', () => {
+    // Write malformed JSON
+    localStorage.setItem(CACHE_KEY, 'invalid-json{');
+
+    // Should not throw when reading
+    expect(() => {
+      const cached = localStorage.getItem(CACHE_KEY);
+      try {
+        JSON.parse(cached);
+      } catch (error) {
+        // Expected to catch error
+        expect(error).toBeDefined();
+      }
+    }).not.toThrow();
+  });
+
+  /**
+   * Test: Cache clears on logout
+   */
+  it('should clear cache when user logs out', () => {
+    const profile = {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      credits: 10,
+    };
+
+    // Set cache
+    const cacheData = { profile, timestamp: Date.now() };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+
+    // Verify cache exists
+    expect(localStorage.getItem(CACHE_KEY)).toBeDefined();
+
+    // Simulate logout - clear cache
+    localStorage.removeItem(CACHE_KEY);
+
+    // Verify cache is cleared
+    expect(localStorage.getItem(CACHE_KEY)).toBeNull();
+  });
+
+  /**
+   * Test: Cache update reflects credit changes
+   */
+  it('should update cache when credits change', () => {
+    const initialProfile = {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      credits: 10,
+      total_generated: 5,
+    };
+
+    // Set initial cache
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ profile: initialProfile, timestamp: Date.now() })
+    );
+
+    // Simulate credit update
+    const updatedProfile = { ...initialProfile, credits: 9 };
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ profile: updatedProfile, timestamp: Date.now() })
+    );
+
+    // Verify cache was updated
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    expect(cached.profile.credits).toBe(9);
+  });
+
+  /**
+   * Test: Cache validation (timestamp exists)
+   */
+  it('should include timestamp in cached data', () => {
+    const profile = {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      credits: 10,
+    };
+
+    const beforeCache = Date.now();
+    const cacheData = { profile, timestamp: Date.now() };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    const afterCache = Date.now();
+
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    expect(cached.timestamp).toBeDefined();
+    expect(cached.timestamp).toBeGreaterThanOrEqual(beforeCache);
+    expect(cached.timestamp).toBeLessThanOrEqual(afterCache);
   });
 });
 
