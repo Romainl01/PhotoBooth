@@ -33,15 +33,26 @@ import HeaderSection from './HeaderSection';
 import ShowcaseTV from './ShowcaseTV';
 import VHSPlayback from './VHSPlayback';
 import GoogleButton from './GoogleButton';
+import InAppBrowserModal from './InAppBrowserModal';
+import { isInAppBrowser } from '../../lib/userAgent';
 
 export default function SignInLayout() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showInAppBrowserError, setShowInAppBrowserError] = useState(false);
   const supabase = createClient();
 
   // Ensure gray background for Safari mobile (already default, but set for client-side nav)
   useEffect(() => {
     document.documentElement.style.backgroundColor = '#e3e3e3';
   }, []);
+
+  // Detect if in an in-app browser
+  useEffect(() => {
+    if (isInAppBrowser(navigator.userAgent)) {
+      setShowInAppBrowserError(true);
+    }
+  }, []);
+
 
   // Desktop showcase images (768px+)
   const desktopShowcaseImages = [
@@ -89,6 +100,11 @@ export default function SignInLayout() {
   const showcaseImages = isDesktop ? desktopShowcaseImages : mobileShowcaseImages;
 
   const handleGoogleSignIn = async () => {
+    if (isInAppBrowser(navigator.userAgent)) {
+      setShowInAppBrowserError(true);
+      return;
+    }
+
     try {
       setIsLoading(true);
 
@@ -165,6 +181,11 @@ export default function SignInLayout() {
       ">
         {/* New Header Section with Gradient */}
         <HeaderSection />
+
+        {/* In-App Browser Error Modal */}
+        {showInAppBrowserError && (
+          <InAppBrowserModal onDismiss={() => setShowInAppBrowserError(false)} />
+        )}
 
         {/* VHS Playback in TV Frame */}
         <ShowcaseTV
