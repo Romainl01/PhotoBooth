@@ -46,12 +46,7 @@ export default function SignInLayout() {
     document.documentElement.style.backgroundColor = '#e3e3e3';
   }, []);
 
-  // Detect if in an in-app browser
-  useEffect(() => {
-    if (isInAppBrowser(navigator.userAgent)) {
-      setShowInAppBrowserError(true);
-    }
-  }, []);
+
 
 
   // Desktop showcase images (768px+)
