@@ -10,6 +10,7 @@ import { STYLE_PROMPTS } from './stylePrompts';
 // Ordered list of filters for UI navigation
 export const FILTERS = [
   'Executive',
+  'Still',
   'Lord',
   'Wes Anderson',
   'Urban',

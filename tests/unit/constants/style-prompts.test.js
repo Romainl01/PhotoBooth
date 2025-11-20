@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { STYLE_PROMPTS } from '@/src/constants/stylePrompts.js';
+import { FILTERS } from '@/src/constants/filters.js';
 
 describe('Style Prompts - Filter Configuration', () => {
   describe('STYLE_PROMPTS structure', () => {
@@ -8,9 +9,9 @@ describe('Style Prompts - Filter Configuration', () => {
       expect(Object.keys(STYLE_PROMPTS).length).toBeGreaterThan(0);
     });
 
-    it('should have exactly 13 active styles', () => {
+    it('should have the same number of styles as FILTERS array', () => {
       const activeStyles = Object.keys(STYLE_PROMPTS);
-      expect(activeStyles).toHaveLength(13);
+      expect(activeStyles).toHaveLength(FILTERS.length);
     });
 
     it('should export as an object', () => {
@@ -22,6 +23,7 @@ describe('Style Prompts - Filter Configuration', () => {
   describe('Active styles - presence and validity', () => {
     const expectedStyles = [
       'Executive',
+      'Still',
       'Wes Anderson',
       'Urban',
       'Runway',
@@ -61,17 +63,17 @@ describe('Style Prompts - Filter Configuration', () => {
       it(`"${styleName}" prompt should preserve facial identity (contains "preserve" or "maintain")`, () => {
         const lowerPrompt = prompt.toLowerCase();
         const hasPreserve = lowerPrompt.includes('preserve') ||
-                           lowerPrompt.includes('maintain') ||
-                           lowerPrompt.includes('keep exact') ||
-                           lowerPrompt.includes('keep original');
+          lowerPrompt.includes('maintain') ||
+          lowerPrompt.includes('keep exact') ||
+          lowerPrompt.includes('keep original');
         expect(hasPreserve).toBe(true);
       });
 
       it(`"${styleName}" prompt should mention facial features`, () => {
         const lowerPrompt = prompt.toLowerCase();
         const hasFacialMention = lowerPrompt.includes('face') ||
-                                lowerPrompt.includes('facial') ||
-                                lowerPrompt.includes('identity');
+          lowerPrompt.includes('facial') ||
+          lowerPrompt.includes('identity');
         expect(hasFacialMention).toBe(true);
       });
 
@@ -119,62 +121,62 @@ describe('Style Prompts - Filter Configuration', () => {
     it('Marseille style should mention OM or Marseille', () => {
       const marseillePrompt = STYLE_PROMPTS['Marseille'];
       const hasMarseilleElements = marseillePrompt.includes('Marseille') ||
-                                   marseillePrompt.includes('OM') ||
-                                   marseillePrompt.includes('Olympique');
+        marseillePrompt.includes('OM') ||
+        marseillePrompt.includes('Olympique');
       expect(hasMarseilleElements).toBe(true);
     });
 
     it('Halloween style should mention costume or Halloween', () => {
       const halloweenPrompt = STYLE_PROMPTS['Halloween'].toLowerCase();
       const hasHalloweenElements = halloweenPrompt.includes('halloween') ||
-                                   halloweenPrompt.includes('costume');
+        halloweenPrompt.includes('costume');
       expect(hasHalloweenElements).toBe(true);
     });
 
     it('Kill Bill style should mention yellow tracksuit or katana', () => {
       const killBillPrompt = STYLE_PROMPTS['Kill Bill'].toLowerCase();
       const hasKillBillElements = killBillPrompt.includes('yellow') ||
-                                  killBillPrompt.includes('tracksuit') ||
-                                  killBillPrompt.includes('katana');
+        killBillPrompt.includes('tracksuit') ||
+        killBillPrompt.includes('katana');
       expect(hasKillBillElements).toBe(true);
     });
 
     it('Chucky style should mention striped shirt or overalls', () => {
       const chuckyPrompt = STYLE_PROMPTS['Chucky'].toLowerCase();
       const hasChuckyElements = chuckyPrompt.includes('striped') ||
-                                chuckyPrompt.includes('overalls');
+        chuckyPrompt.includes('overalls');
       expect(hasChuckyElements).toBe(true);
     });
 
     it('Zombie style should mention makeup or Walking Dead', () => {
       const zombiePrompt = STYLE_PROMPTS['Zombie'].toLowerCase();
       const hasZombieElements = zombiePrompt.includes('zombie') ||
-                                zombiePrompt.includes('makeup') ||
-                                zombiePrompt.includes('walking dead');
+        zombiePrompt.includes('makeup') ||
+        zombiePrompt.includes('walking dead');
       expect(hasZombieElements).toBe(true);
     });
 
     it('Matrix style should mention black leather or trench coat', () => {
       const matrixPrompt = STYLE_PROMPTS['Matrix'].toLowerCase();
       const hasMatrixElements = matrixPrompt.includes('black leather') ||
-                                matrixPrompt.includes('trench coat') ||
-                                matrixPrompt.includes('matrix');
+        matrixPrompt.includes('trench coat') ||
+        matrixPrompt.includes('matrix');
       expect(hasMatrixElements).toBe(true);
     });
 
     it('Star Wars style should mention Jedi or Sith or lightsaber', () => {
       const starWarsPrompt = STYLE_PROMPTS['Star Wars'].toLowerCase();
       const hasStarWarsElements = starWarsPrompt.includes('jedi') ||
-                                  starWarsPrompt.includes('sith') ||
-                                  starWarsPrompt.includes('lightsaber');
+        starWarsPrompt.includes('sith') ||
+        starWarsPrompt.includes('lightsaber');
       expect(hasStarWarsElements).toBe(true);
     });
 
     it('Harry Potter style should mention Hogwarts or wizard', () => {
       const harryPotterPrompt = STYLE_PROMPTS['Harry Potter'].toLowerCase();
       const hasHPElements = harryPotterPrompt.includes('hogwarts') ||
-                           harryPotterPrompt.includes('wizard') ||
-                           harryPotterPrompt.includes('wand');
+        harryPotterPrompt.includes('wizard') ||
+        harryPotterPrompt.includes('wand');
       expect(hasHPElements).toBe(true);
     });
   });
@@ -187,11 +189,11 @@ describe('Style Prompts - Filter Configuration', () => {
         const lowerPrompt = prompt.toLowerCase();
         // Must explicitly mention preserving facial identity
         const hasIdentityPreservation = lowerPrompt.includes('exact facial') ||
-                                       lowerPrompt.includes('exact face') ||
-                                       lowerPrompt.includes('facial identity') ||
-                                       lowerPrompt.includes('preserve exact') ||
-                                       lowerPrompt.includes('preserve') ||
-                                       lowerPrompt.includes('maintain');
+          lowerPrompt.includes('exact face') ||
+          lowerPrompt.includes('facial identity') ||
+          lowerPrompt.includes('preserve exact') ||
+          lowerPrompt.includes('preserve') ||
+          lowerPrompt.includes('maintain');
         expect(hasIdentityPreservation).toBe(true);
       });
 

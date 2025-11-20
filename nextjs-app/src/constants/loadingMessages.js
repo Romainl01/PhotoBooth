@@ -245,6 +245,24 @@ export const LOADING_MESSAGES = {
     'Getting that Wizarding World glow...',
     'Mischief managed, style loading...',
   ],
+
+  'Still': [
+    'Setting up the cinema lights...',
+    'Adding that film noir atmosphere...',
+    'Perfecting your blockbuster moment...',
+    'Channeling movie poster energy...',
+    'Getting that dramatic side lighting...',
+    'Adding cinematic depth and shadows...',
+    'Preparing your leading role debut...',
+    'Summoning golden hour film vibes...',
+    'Crafting your theatrical presence...',
+    'Getting that anamorphic aesthetic...',
+    'Adding film grain texture...',
+    'Channeling your inner protagonist...',
+    'Perfecting your confident stance...',
+    'Getting that amber color grade...',
+    'Your cinematic moment awaits...',
+  ],
 };
 
 // Generic fallback messages (used if filter not found)
