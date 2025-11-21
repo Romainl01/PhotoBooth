@@ -744,6 +744,75 @@ const handleFilterChange = (direction) => {
 }
 ```
 
+#### PaywallModal.jsx
+
+**Purpose:** Credit pack purchase interface with horizontal scrollable cards.
+
+**Design (Updated Nov 21, 2025):**
+- Horizontal scrollable pack selection with scroll-snap behavior
+- 240px wide cards with ~80px peek effect (33% of adjacent cards visible)
+- Three packs: Start (10 credits), Creator (30 credits), Pro (100 credits)
+- "Most popular plan" badge on Creator pack
+- Two-step selection: click card to select → click CTA button to checkout
+
+**Props:**
+```javascript
+{
+  onClose: () => void  // Close modal callback
+}
+```
+
+**Layout:**
+```
+┌─────────────────────────────────┐
+│     🎥 Camera Icon    [✕ Close] │
+├─────────────────────────────────┤
+│      Choose your pack           │
+│  Your best picture might be...  │
+│  Already 1 567 photos generated │
+├─────────────────────────────────┤
+│                                 │
+│ [Start] 👉 [Creator] 👈 [Pro]  │ ← horizontal scroll
+│  10img     30img      100img    │   with peek effect
+│                                 │
+├─────────────────────────────────┤
+│ ✨ No subscription required     │
+│ 🔓 Secure payment with Stripe  │
+│ ⚡️ Instant delivery            │
+├─────────────────────────────────┤
+│   [Get Creator pack - 6.99€]   │
+└─────────────────────────────────┘
+```
+
+**Key Features:**
+- **Peek effect**: Adjacent cards show ~80px (33%) to signal horizontal scrollability
+- **Auto-centering**: Creator pack auto-scrolls to center on mount as default/recommended option
+- **Optimistic UI**: Zero loading state - initializes with `DEFAULT_CREDIT_PACKAGES` constants
+- **Background sync**: Silently fetches latest prices from database after initial render
+- **Selection state**: Yellow (#fab617) border on selected card with circular checkbox
+- **Responsive design**: Cards use `min-w-[240px]` with `gap-3` (12px) between them
+
+**Technical Implementation:**
+```javascript
+// Horizontal scroll container structure
+<div className="-mx-4">  {/* Bleeds to screen edges */}
+  <div className="px-12 snap-x snap-mandatory">  {/* 48px padding creates peek zones */}
+    <div className="snap-center">  {/* Each card snaps to center */}
+      <button className="min-w-[240px]">  {/* 240px card width */}
+```
+
+**Peek Calculation:**
+- Viewport: 425px (typical mobile)
+- Card width: 240px
+- Natural space: (425 - 240) / 2 = 92.5px per side
+- Visible peek: 92.5px - 12px gap = **~80px of adjacent card** (33% visibility)
+
+**Performance:**
+- Zero loading state (instant UI with constants)
+- Background database sync for price updates
+- Smooth scroll-snap transitions
+- Responsive card sizing across device widths
+
 ### 4.3 UI Components
 
 #### Button.jsx

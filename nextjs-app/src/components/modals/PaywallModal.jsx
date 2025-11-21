@@ -1,21 +1,27 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Check } from 'lucide-react'
 import SkeuomorphicRectButton from '@/components/ui/SkeuomorphicRectButton'
 import CaptureIcon from '@/components/icons/CaptureIcon'
+import CloseIcon from '@/components/icons/CloseIcon'
 import { DEFAULT_CREDIT_PACKAGES } from '@/lib/creditPackages'
 
 /**
- * PaywallModal - Blocks camera when user has 0 credits
- *
- * Phase 2B Update: Now displays 3 credit packages with Stripe checkout
+ * PaywallModal - Horizontal scrollable pack selection
  *
  * Design:
- * - Full-screen white/light backdrop with blur
- * - Centered dark card with rounded corners
- * - Camera blocked icon (📷🚫) with red indicator
- * - Motivational copy: "Don't stop now! Your best picture might be next"
- * - 3 credit package buttons: Starter (10), Creator (30), Pro (100)
+ * - Horizontal scrollable cards (240px wide) with scroll-snap and peek effect
+ * - Camera icon header with close button
+ * - "Choose your pack" title
+ * - Three pack cards: Start (10), Creator (30), Pro (100)
+ * - "Most popular plan" badge on Creator
+ * - Two-step selection: click card to select → click CTA button to checkout
+ *
+ * UX:
+ * - Adjacent cards peek ~80px into view to signal horizontal scrollability
+ * - Creator pack auto-centers on mount as the default/recommended option
+ * - Smooth scroll-snap behavior for intuitive navigation
  *
  * Performance:
  * - Zero loading state (optimistic UI pattern)
@@ -23,22 +29,14 @@ import { DEFAULT_CREDIT_PACKAGES } from '@/lib/creditPackages'
  * - Background sync with database for price updates
  *
  * Props:
- * - onClose: function - Close modal (optional, for backdrop click)
- *
- * Purchase Flow:
- * 1. User clicks a credit package button
- * 2. Modal calls /api/checkout with price_id
- * 3. API returns Stripe checkout URL
- * 4. User redirects to Stripe payment page
- * 5. After payment, Stripe webhook adds credits
- * 6. User redirects back to app
+ * - onClose: function - Close modal callback
  */
 export default function PaywallModal({ onClose }) {
-  // Initialize with constants for instant UI (zero loading state)
   const [packages, setPackages] = useState(DEFAULT_CREDIT_PACKAGES)
-  const [processingPackageId, setProcessingPackageId] = useState(null)
+  const [selectedPackage, setSelectedPackage] = useState(DEFAULT_CREDIT_PACKAGES[1]) // Default to Creator
+  const [processingCheckout, setProcessingCheckout] = useState(false)
 
-  // Optional: Sync packages from database in background (silently updates if prices change)
+  // Sync packages from database in background
   useEffect(() => {
     async function fetchPackages() {
       try {
@@ -46,25 +44,36 @@ export default function PaywallModal({ onClose }) {
         if (!response.ok) throw new Error('Failed to fetch packages')
         const data = await response.json()
         setPackages(data.packages)
+        setSelectedPackage(data.packages[1]) // Update selected to Creator
       } catch (error) {
         console.error('[PaywallModal] Error fetching packages:', error)
-        // No need for fallback - already initialized with hardcoded values
       }
     }
-
     fetchPackages()
   }, [])
 
-  // Handle credit package purchase
-  async function handlePurchase(priceId, packageId) {
-    try {
-      setProcessingPackageId(packageId)
+  // Scroll to Creator card on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const creatorCard = document.querySelector('[data-pack="Creator"]')
+      if (creatorCard) {
+        creatorCard.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' })
+      }
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
-      // Call checkout API to create Stripe session
+  // Handle checkout with selected package
+  async function handleCheckout() {
+    if (!selectedPackage) return
+
+    try {
+      setProcessingCheckout(true)
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId: selectedPackage.stripe_price_id }),
       })
 
       if (!response.ok) {
@@ -73,13 +82,11 @@ export default function PaywallModal({ onClose }) {
       }
 
       const { url } = await response.json()
-
-      // Redirect to Stripe Checkout
       window.location.href = url
     } catch (error) {
       console.error('[PaywallModal] Checkout error:', error)
       alert(`Error: ${error.message}`)
-      setProcessingPackageId(null)
+      setProcessingCheckout(false)
     }
   }
 
@@ -89,56 +96,160 @@ export default function PaywallModal({ onClose }) {
     const symbol = currency === 'EUR' ? '€' : '$'
     return `${amount}${symbol}`
   }
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="paywall-modal">
-      {/* Backdrop with blur - dark overlay to dim camera screen */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label="Close modal"
-      />
 
-      {/* Modal card - centered dark content */}
-      <div
-        className="relative bg-[#242424] rounded-[24px] p-4 max-w-[350px] w-full shadow-2xl"
-        style={{
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        }}
-      >
-        <div className="flex flex-col items-center gap-8 text-center">
-          {/* Camera blocked icon */}
+  return (
+    <div className="fixed inset-0 z-50 bg-[#242424]" data-testid="paywall-modal">
+      {/* Main content */}
+      <div className="flex flex-col h-full p-4 gap-5">
+        {/* Header row: Camera icon centered, Close button absolute */}
+        <div className="relative flex justify-center pt-2">
+          {/* Camera icon - centered */}
           <div className="w-[88px] h-[88px]">
-            <CaptureIcon className="w-full h-full" iconType="no-camera" />
+            <CaptureIcon className="w-full h-full" iconType="camera" />
           </div>
 
-          {/* Copy */}
-          <div className="flex flex-col gap-6 w-full">
-            <h2 className="font-ibm-plex-mono font-bold text-2xl text-white leading-snug">
-              Don't stop now!
-            </h2>
-            <p className="font-ibm-plex-mono font-medium text-base text-white leading-relaxed">
-              Your best picture might be next
+          {/* Close button - absolute positioned */}
+          <button
+            onClick={onClose}
+            className="absolute right-0 top-2 w-12 h-12"
+            aria-label="Close"
+          >
+            <CloseIcon className="w-full h-full" />
+          </button>
+        </div>
+
+        {/* Title section */}
+        <div className="flex flex-col items-center gap-3">
+          {/* Title */}
+          <h2 className="font-crimson-pro font-bold text-[28px] leading-[22px] text-white text-center">
+            Choose your pack
+          </h2>
+
+          {/* Subtitle and stats */}
+          <div className="flex flex-col gap-3 items-center">
+            <p className="font-ibm-plex-mono font-medium text-base text-white text-center">
+              Your best picture might be next.
+            </p>
+            <p className="font-ibm-plex-mono font-medium text-[13px] text-white">
+              Already 1 567 photos generated ⚡️
             </p>
           </div>
+        </div>
 
-          {/* Credit Package Buttons */}
-          <div className="flex flex-col gap-4 w-full">
-            {packages.map((pkg, index) => (
-              <SkeuomorphicRectButton
-                key={pkg.id || index}
-                width={318}
-                height={56}
-                gradientId={`paywall-package-${index}`}
-                onClick={() => handlePurchase(pkg.stripe_price_id, pkg.id)}
-                disabled={processingPackageId === pkg.id}
-                className="w-full"
-              >
-                <span className="font-ibm-plex-mono font-medium text-base text-white">
-                  {pkg.emoji} {pkg.name}: {pkg.credits} images - {formatPrice(pkg.price_cents, pkg.currency)}
-                </span>
-              </SkeuomorphicRectButton>
-            ))}
+        {/* Horizontal scrollable cards with peek effect */}
+        {/* -mx-4 bleeds container to screen edges (negates parent p-4 padding) */}
+        <div className="relative -mx-4 overflow-visible">
+          {/* Pack cards container with scroll-snap and 48px horizontal padding for peek zones */}
+          <div className="flex gap-3 overflow-x-auto overflow-y-visible pb-4 pt-6 px-12 snap-x snap-mandatory scrollbar-hide scroll-smooth">
+            {packages.map((pkg, index) => {
+              const isSelected = selectedPackage?.id === pkg.id
+              const isCreator = pkg.name === 'Creator'
+
+              return (
+                <div key={pkg.id || index} data-pack={pkg.name} className="relative flex-shrink-0 snap-center">
+                  {/* "Most popular plan" badge - straddles card border */}
+                  {isCreator && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 translate-x-2 z-10 bg-[#fab617] text-white font-ibm-plex-mono font-medium text-sm px-2 py-1.5 rounded-[10px] whitespace-nowrap shadow-lg">
+                      Most popular plan
+                    </div>
+                  )}
+
+                  {/* Pack card */}
+                  <button
+                    onClick={() => setSelectedPackage(pkg)}
+                    className={`
+                      min-w-[240px] p-6 rounded-2xl flex flex-col gap-4
+                      focus:outline-none
+                      ${isSelected
+                        ? 'border-2 !border-[#fab617] bg-[#424141]'
+                        : 'border-2 border-transparent bg-[#424141]'
+                      }
+                      shadow-[3px_4px_4px_0px_rgba(0,0,0,0.4)]
+                    `}
+                  >
+                    {/* Card header */}
+                    <div className="flex gap-4 items-start">
+                      {/* Selection checkbox */}
+                      <div className={`
+                        w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
+                        ${isSelected ? 'bg-[#fab617]' : 'bg-transparent border-2 border-gray-500'}
+                      `}>
+                        {isSelected && <Check className="w-4 h-4 text-black" strokeWidth={3} />}
+                      </div>
+
+                      {/* Pack details */}
+                      <div className="flex gap-8 items-start flex-1">
+                        {/* Left: Name and features */}
+                        <div className="flex flex-col gap-3">
+                          <h3 className="font-crimson-pro font-bold text-2xl leading-[22px] text-white text-left">
+                            {pkg.name} - {pkg.credits === 10 ? '1O' : pkg.credits === 30 ? '3O' : '1O0'} images
+                          </h3>
+
+                          {/* Features */}
+                          <div className="flex flex-col gap-2.5">
+                            <div className="flex gap-2 items-center">
+                              <Check className="w-4 h-4 text-white" strokeWidth={2} />
+                              <span className="font-ibm-plex-mono font-medium text-xs text-white">
+                                All filters
+                              </span>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                              <Check className="w-4 h-4 text-white" strokeWidth={2} />
+                              <span className="font-ibm-plex-mono font-medium text-xs text-white">
+                                HD Quality
+                              </span>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                              <Check className="w-4 h-4 text-white" strokeWidth={2} />
+                              <span className="font-ibm-plex-mono font-medium text-xs text-white">
+                                Instant download
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Price */}
+                        <div className="flex flex-col justify-start">
+                          <p className="font-ibm-plex-mono font-medium text-base text-white whitespace-nowrap">
+                            {formatPrice(pkg.price_cents, pkg.currency)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )
+            })}
           </div>
+        </div>
+
+        {/* Info items */}
+        <div className="flex flex-col gap-3 items-center">
+          <p className="font-ibm-plex-mono font-medium text-[13px] text-white text-center">
+            ✨ No subscription required
+          </p>
+          <p className="font-ibm-plex-mono font-medium text-[13px] text-white text-center">
+            🔓 Secure payment with Stripe
+          </p>
+          <p className="font-ibm-plex-mono font-medium text-[13px] text-white text-center">
+            ⚡️ Instant delivery
+          </p>
+        </div>
+
+        {/* CTA Button */}
+        <div className="pb-4">
+          <SkeuomorphicRectButton
+            width={358}
+            height={56}
+            gradientId="paywall-cta"
+            onClick={handleCheckout}
+            disabled={processingCheckout || !selectedPackage}
+            className="w-full"
+          >
+            <span className="font-ibm-plex-mono font-medium text-base text-[#fab617]">
+              Get {selectedPackage?.name || 'Creator'} pack - {selectedPackage ? formatPrice(selectedPackage.price_cents, selectedPackage.currency) : '6.99€'}
+            </span>
+          </SkeuomorphicRectButton>
         </div>
       </div>
     </div>

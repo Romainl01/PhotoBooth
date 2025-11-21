@@ -119,7 +119,7 @@ test.describe('Image generation - flows', () => {
 
     const paywall = page.getByTestId('paywall-modal')
     await expect(paywall).toBeVisible()
-    await expect(paywall.getByText("Don't stop now!")).toBeVisible()
+    await expect(paywall.getByText('Choose your pack')).toBeVisible()
 
     expect(apiCalled).toBeFalsy()
 
