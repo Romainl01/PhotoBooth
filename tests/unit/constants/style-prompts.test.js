@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { STYLE_PROMPTS } from '@/src/constants/stylePrompts.js';
-import { FILTERS } from '@/src/constants/filters.js';
+import { STYLE_PROMPTS } from '@/constants/stylePrompts.js';
+import { FILTERS } from '@/constants/filters.js';
 
 describe('Style Prompts - Filter Configuration', () => {
   describe('STYLE_PROMPTS structure', () => {

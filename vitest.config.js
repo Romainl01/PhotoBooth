@@ -26,7 +26,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './nextjs-app'),
+      '@': path.resolve(__dirname, './nextjs-app/src'),
     },
   },
 });

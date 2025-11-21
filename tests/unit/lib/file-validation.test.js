@@ -6,7 +6,7 @@ import {
   formatFileSize,
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
-} from '@/src/lib/fileValidation.js';
+} from '@/lib/fileValidation.js';
 
 describe('File Validation - Valid Formats', () => {
   describe('validateFileFormat() - accepts valid image formats', () => {

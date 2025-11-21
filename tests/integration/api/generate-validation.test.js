@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { STYLE_PROMPTS } from '@/src/constants/stylePrompts';
+import { STYLE_PROMPTS } from '@/constants/stylePrompts';
 
 /**
  * Request Validator

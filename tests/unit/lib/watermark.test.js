@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { addWatermark } from '@/src/lib/watermark.js';
+import { addWatermark } from '@/lib/watermark.js';
 
 describe('Watermark - Add Branding to Images', () => {
   let mockCanvas;
@@ -84,8 +84,8 @@ describe('Watermark - Add Branding to Images', () => {
     });
 
     // Mock console methods to suppress logs during tests
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => { });
+    vi.spyOn(console, 'error').mockImplementation(() => { });
   });
 
   afterEach(() => {

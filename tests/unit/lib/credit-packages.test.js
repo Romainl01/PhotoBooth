@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DEFAULT_CREDIT_PACKAGES } from '@/src/lib/creditPackages.js';
+import { DEFAULT_CREDIT_PACKAGES } from '@/lib/creditPackages.js';
 
 describe('Credit Packages - Configuration', () => {
   describe('DEFAULT_CREDIT_PACKAGES structure', () => {

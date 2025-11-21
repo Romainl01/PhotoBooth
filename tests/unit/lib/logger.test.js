@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { logger, logApiRequest, logApiResponse, logPaymentEvent } from '@/src/lib/logger.js';
+import { logger, logApiRequest, logApiResponse, logPaymentEvent } from '@/lib/logger.js';
 
 describe('Logger - Functionality and Safety', () => {
   let consoleLogSpy;
@@ -8,9 +8,9 @@ describe('Logger - Functionality and Safety', () => {
 
   beforeEach(() => {
     // Spy on console methods
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
   });
 
   afterEach(() => {
