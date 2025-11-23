@@ -28,6 +28,7 @@ jobs:
         echo "NEXT_PUBLIC_STRIPE_PRICE_CREATOR=price_creator_dummy" >> nextjs-app/.env.local
         echo "NEXT_PUBLIC_STRIPE_PRICE_PRO=price_pro_dummy" >> nextjs-app/.env.local
     - run: npm ci
+    - run: npm ci --prefix nextjs-app
     - run: npm run test:unit
       env:
         NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
