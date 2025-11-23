@@ -51,7 +51,9 @@ export async function updateSession(request) {
     !user &&
     !request.nextUrl.pathname.startsWith('/sign-in') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/api/webhooks')
+    !request.nextUrl.pathname.startsWith('/api/webhooks') &&
+    !request.nextUrl.pathname.startsWith('/terms') &&
+    !request.nextUrl.pathname.startsWith('/privacy')
   ) {
     // No user, redirect to sign-in (except if already on sign-in, auth callback, or webhooks)
     const url = request.nextUrl.clone()

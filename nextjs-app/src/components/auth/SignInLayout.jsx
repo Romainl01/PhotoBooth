@@ -33,6 +33,7 @@ import HeaderSection from './HeaderSection';
 import ShowcaseTV from './ShowcaseTV';
 import VHSPlayback from './VHSPlayback';
 import GoogleButton from './GoogleButton';
+import Footer from './Footer';
 import InAppBrowserModal from './InAppBrowserModal';
 import { isInAppBrowser } from '../../lib/userAgent';
 
@@ -229,6 +230,26 @@ export default function SignInLayout() {
         >
           <VHSPlayback images={showcaseImages} />
         </ShowcaseTV>
+
+        {/* Agreement Text */}
+        <p className="
+          font-['IBM_Plex_Mono']
+          text-[10px]
+          md:text-[11px]
+          text-black/40
+          text-center
+          max-w-[280px]
+          leading-relaxed
+          -mt-[12px]
+        ">
+          By continuing, you agree to our{' '}
+          <a href="/terms" className="underline hover:text-black/60 transition-colors">Terms</a>
+          {' '}and{' '}
+          <a href="/privacy" className="underline hover:text-black/60 transition-colors">Privacy</a>
+        </p>
+
+        {/* Footer */}
+        <Footer />
       </div>
     </main>
   );
