@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
             <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
                 <p className="mb-2">
-                    Welcome to Morpheo ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy.
+                    Welcome to Morpheo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to protecting your personal information and your right to privacy.
                     This Privacy Policy explains how we collect, use, and safeguard your information when you use our application and services.
                 </p>
             </section>
