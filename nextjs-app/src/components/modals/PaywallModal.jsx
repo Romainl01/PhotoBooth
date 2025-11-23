@@ -163,7 +163,7 @@ export default function PaywallModal({ onClose }) {
                   <div key={pkg.id || index} data-pack={pkg.name} className="relative flex-shrink-0 md:flex-shrink snap-center md:snap-align-none">
                     {/* "Most popular plan" badge - straddles card border */}
                     {isCreator && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10 bg-[#fab617] text-white font-ibm-plex-mono font-medium text-sm px-2 py-1.5 rounded-[10px] whitespace-nowrap shadow-lg">
+                      <div className="absolute -top-4 right-4 z-10 bg-[#fab617] text-white font-ibm-plex-mono font-medium text-sm px-2 py-1.5 rounded-[10px] whitespace-nowrap shadow-lg">
                         Most popular plan
                       </div>
                     )}
