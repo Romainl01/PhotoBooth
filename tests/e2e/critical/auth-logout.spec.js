@@ -167,7 +167,7 @@ async function mockCameraFeed(context) {
           return [
             {
               kind: 'video',
-              stop() {},
+              stop() { },
               enabled: true,
             },
           ]
