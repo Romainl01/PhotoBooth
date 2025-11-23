@@ -16,7 +16,6 @@
     "prepare": "husky",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
-    "test:unit": "vitest run tests/unit",
     "test:watch": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
