@@ -105,23 +105,23 @@ export default function CameraScreen({
     <div className="bg-background flex flex-col justify-between h-full w-full px-[12px] py-[8px] md:p-0 md:relative">
       {/* Camera Preview */}
       <div className="flex-1 bg-camera-bg min-h-0 relative rounded-[32px] shadow-camera-view overflow-hidden w-full md:absolute md:inset-0 md:rounded-none md:shadow-none">
-          {/* Video element for camera feed */}
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
-          />
+        {/* Video element for camera feed */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+        />
 
-          {/* Canvas for capturing (hidden) */}
-          <canvas ref={canvasRef} className="hidden" />
+        {/* Canvas for capturing (hidden) */}
+        <canvas ref={canvasRef} className="hidden" />
 
-          {/* Phase 2A: Credit Badge - top-right corner */}
-          <CreditBadge className="absolute top-4 right-4 z-10" />
+        {/* Phase 2A: Credit Badge - top-right corner */}
+        <CreditBadge className="absolute top-4 right-4 z-10" />
 
-          {/* Inner shadow for depth */}
-          <div className="absolute inset-0 pointer-events-none shadow-camera-inner md:shadow-none" />
+        {/* Inner shadow for depth */}
+        <div className="absolute inset-0 pointer-events-none shadow-camera-inner md:shadow-none" />
       </div>
 
       {/* Controls Section - Floating on desktop */}

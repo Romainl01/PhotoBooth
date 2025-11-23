@@ -42,8 +42,47 @@ export default function SignInLayout() {
   const supabase = createClient();
 
   // Ensure gray background for Safari mobile (already default, but set for client-side nav)
+  // Ensure gray background for Safari mobile (already default, but set for client-side nav)
   useEffect(() => {
-    document.documentElement.style.backgroundColor = '#e3e3e3';
+    // Save original styles
+    const originalHtmlBg = document.documentElement.style.background;
+    const originalBodyBg = document.body.style.backgroundColor;
+
+    // Set solid gray background (Fixes Chrome & Safari Bottom)
+    document.documentElement.style.background = '#e3e3e3';
+    document.body.style.backgroundColor = '#e3e3e3';
+
+    // Dynamic Theme Color Logic for Safari Top Overscroll
+    const updateThemeColor = () => {
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (!themeColorMeta) return;
+
+      // If at top (or near top), use Yellow. Otherwise, use Gray.
+      const newColor = window.scrollY < 20 ? '#ffcc53' : '#e3e3e3';
+
+      if (themeColorMeta.getAttribute('content') !== newColor) {
+        themeColorMeta.setAttribute('content', newColor);
+      }
+    };
+
+    // Initial check
+    updateThemeColor();
+
+    // Add listener
+    window.addEventListener('scroll', updateThemeColor);
+
+    // Cleanup: Restore original styles and remove listener
+    return () => {
+      document.documentElement.style.background = originalHtmlBg;
+      document.body.style.backgroundColor = originalBodyBg;
+      window.removeEventListener('scroll', updateThemeColor);
+
+      // Reset theme color to default (dark gray)
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', '#242424');
+      }
+    };
   }, []);
 
 

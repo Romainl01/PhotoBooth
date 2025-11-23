@@ -25,6 +25,10 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: '#ffcc53',
+};
+
 export default function SignInPage() {
   return <SignInLayout />;
 }
