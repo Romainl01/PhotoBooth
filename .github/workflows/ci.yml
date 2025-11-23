@@ -17,14 +17,15 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'npm'
+    - name: Create .env.local
+      run: |
+        echo "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co" >> nextjs-app/.env.local
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-anon-key" >> nextjs-app/.env.local
+        echo "SUPABASE_SERVICE_ROLE_KEY=dummy-service-key" >> nextjs-app/.env.local
+        echo "STRIPE_SECRET_KEY=sk_test_dummy" >> nextjs-app/.env.local
+        echo "STRIPE_WEBHOOK_SECRET=whsec_dummy" >> nextjs-app/.env.local
+        echo "NEXT_PUBLIC_STRIPE_PRICE_STARTER=price_starter_dummy" >> nextjs-app/.env.local
+        echo "NEXT_PUBLIC_STRIPE_PRICE_CREATOR=price_creator_dummy" >> nextjs-app/.env.local
+        echo "NEXT_PUBLIC_STRIPE_PRICE_PRO=price_pro_dummy" >> nextjs-app/.env.local
     - run: npm ci
     - run: npm test
-      env:
-        NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
-        SUPABASE_SERVICE_ROLE_KEY: dummy-service-key
-        STRIPE_SECRET_KEY: sk_test_dummy
-        STRIPE_WEBHOOK_SECRET: whsec_dummy
-        NEXT_PUBLIC_STRIPE_PRICE_STARTER: price_starter_dummy
-        NEXT_PUBLIC_STRIPE_PRICE_CREATOR: price_creator_dummy
-        NEXT_PUBLIC_STRIPE_PRICE_PRO: price_pro_dummy
