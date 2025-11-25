@@ -29,7 +29,7 @@ test.describe('Image generation - flows', () => {
         body: JSON.stringify({
           success: true,
           image: MOCK_RESULT,
-          credits: 4,
+          credits: 2,
         }),
       })
     })
@@ -45,7 +45,7 @@ test.describe('Image generation - flows', () => {
     const profileState = await page.evaluate(key => {
       return localStorage.getItem(key)
     }, E2E_PROFILE_STORAGE_KEY)
-    expect(profileState).toContain('"credits":4')
+    expect(profileState).toContain('"credits":2')
 
     const downloadPromise = page.waitForEvent('download')
     await page.getByLabel('Download photo').click()
@@ -78,7 +78,7 @@ test.describe('Image generation - flows', () => {
         body: JSON.stringify({
           success: true,
           image: MOCK_RESULT,
-          credits: 3,
+          credits: 2,
         }),
       })
     })
@@ -94,7 +94,7 @@ test.describe('Image generation - flows', () => {
     await expect(retryButton).toBeVisible()
 
     const profileState = await page.evaluate(key => localStorage.getItem(key), E2E_PROFILE_STORAGE_KEY)
-    expect(profileState).toContain('"credits":5')
+    expect(profileState).toContain('"credits":3')
 
     await retryButton.click()
     await expect(page.locator('img[alt="Generated result"]')).toHaveAttribute('src', MOCK_RESULT)
@@ -128,7 +128,7 @@ test.describe('Image generation - flows', () => {
   })
 })
 
-async function mockAuthState(page, { user = MOCK_USER, credits = 5 } = {}) {
+async function mockAuthState(page, { user = MOCK_USER, credits = 3 } = {}) {
   await page.evaluate(([userKey, profileKey, eventName, user, credits]) => {
     const profile = { id: user.id, credits, email: user.email }
     localStorage.setItem(userKey, JSON.stringify(user))

@@ -11,7 +11,7 @@ import { useUser } from '@/contexts/UserContext'
  *   - Green (#21FA37): Healthy (>10 credits)
  *   - Yellow (#FAB617): Warning (4-10 credits)
  *   - Red (#FF0000): Critical (1-3 credits)
- * - Text adapts for free tier: "5 free images left" vs "X credits left"
+ * - Text adapts for free tier: "3 free images left" vs "X credits left"
  *
  * Usage:
  * <CreditBadge className="absolute top-4 right-4" />
@@ -64,8 +64,8 @@ export default function CreditBadge({ className = '' }) {
    * Shows "free images" for users who haven't purchased yet
    */
   const getText = () => {
-    // If user has 5 credits and never generated, show "free images"
-    const isFreeUser = credits === 5 && totalGenerated === 0
+    // If user has 3 credits and never generated, show "free images"
+    const isFreeUser = credits === 3 && totalGenerated === 0
 
     if (isFreeUser) {
       return `${credits} free images left`

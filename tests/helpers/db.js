@@ -56,7 +56,7 @@ export const createTestUser = async (supabase, overrides = {}) => {
     .insert({
       id: testId, // UUID required for profiles table
       email: `test-${timestamp}@example.com`,
-      credits: 5,
+      credits: 3,
       total_generated: 0,
       ...overrides,
     })

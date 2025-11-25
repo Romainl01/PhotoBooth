@@ -322,6 +322,103 @@ const handleFilterChange = (direction) => {
 - Smooth scroll-snap transitions
 - Responsive card sizing across device widths
 
+### Credit System
+
+**Overview:** Morpheo uses a credit-based system where each image generation costs 1 credit. New users receive free credits on signup, and can purchase additional credits via Stripe.
+
+#### Free Signup Credits
+
+**Current Value:** 3 free credits per new user
+
+**Implementation:**
+1. **Database Default** (`profiles` table):
+   ```sql
+   ALTER TABLE profiles ALTER COLUMN credits SET DEFAULT 3;
+   ```
+
+2. **Trigger Function** (Supabase):
+   ```sql
+   CREATE FUNCTION handle_new_user()
+   RETURNS TRIGGER AS $$
+   BEGIN
+     INSERT INTO profiles (id, email, credits)
+     VALUES (NEW.id, NEW.email, 3);
+
+     INSERT INTO credit_transactions (user_id, amount, transaction_type, metadata)
+     VALUES (NEW.id, 3, 'initial', jsonb_build_object('source', 'signup_bonus'));
+
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql;
+   ```
+
+3. **Trigger** (fires on `auth.users` insert):
+   - When a user completes Google OAuth signup
+   - Automatically creates profile with 3 credits
+   - Logs transaction with type `'initial'` for audit trail
+
+**Why 3 Credits:**
+- Enough to try multiple styles and understand the product
+- Low enough to drive conversion to paid packs
+- Prevents abuse while maintaining accessibility
+
+#### CreditBadge Component
+
+**File:** `src/components/ui/CreditBadge.jsx`
+
+**Purpose:** Displays remaining credits with color-coded status and special messaging for free users.
+
+**Features:**
+- **Color coding:**
+  - Green (#21FA37): >10 credits (healthy)
+  - Yellow (#FAB617): 4-10 credits (warning)
+  - Red (#FF0000): 1-3 credits (critical)
+- **Free user detection:** Shows "3 free images left" when `credits === 3 && totalGenerated === 0`
+- **Liquid glass effect:** Backdrop blur with transparency for modern aesthetic
+
+**Props:**
+```javascript
+{
+  className?: string  // Optional positioning classes
+}
+```
+
+**Usage:**
+```javascript
+<CreditBadge className="absolute top-4 right-4" />
+```
+
+**Implementation Note:**
+The `isFreeUser` check (`credits === 3`) must match the signup bonus amount. If you change the free credit amount, update line 68 in CreditBadge.jsx.
+
+#### Credit Packages (Paid)
+
+**Source of Truth:** `src/lib/creditPackages.js`
+
+**Available Packages:**
+| Package | Credits | Price | Emoji |
+|---------|---------|-------|-------|
+| Starter | 10 | $3.99 | 💫 |
+| Creator | 30 | $8.99 | 🎨 |
+| Pro | 100 | $19.99 | 🏆 |
+
+**Important:** These are **paid packages**, separate from the free signup bonus. The Starter pack (10 credits, $3.99) is not the same as free signup credits (3 credits, $0).
+
+#### Credit Deduction Flow
+
+1. User clicks capture/upload
+2. Frontend checks `credits > 0` via `useUser()` context
+3. If credits available: call `/api/generate-headshot`
+4. API calls `deduct_credit()` database function (atomic, prevents race conditions)
+5. API returns new credit count
+6. Frontend updates UI via `updateCredits(newCount)`
+
+**Race Condition Protection:**
+```sql
+-- Database function uses row-level locking
+SELECT credits FROM profiles WHERE id = user_id FOR UPDATE;
+```
+
 ## 4.3 UI Components
 
 ### Button.jsx

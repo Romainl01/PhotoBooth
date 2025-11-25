@@ -322,9 +322,9 @@ describe('Stripe Webhooks - Credit Package Validation', () => {
    */
   it('should validate credit amounts match package tiers', () => {
     const packages = [
-      { name: 'Starter', credits: 5, price: 5 },
-      { name: 'Creator', credits: 25, price: 20 },
-      { name: 'Pro', credits: 100, price: 50 },
+      { name: 'Starter', credits: 10, price: 3.99 },
+      { name: 'Creator', credits: 30, price: 8.99 },
+      { name: 'Pro', credits: 100, price: 19.99 },
     ];
 
     packages.forEach((pkg) => {
