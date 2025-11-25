@@ -404,9 +404,9 @@ export const DEFAULT_CREDIT_PACKAGES = [
     name: 'Starter',
     emoji: '💫',
     credits: 10,
-    price_cents: 299,
-    currency: 'EUR',
-    stripe_price_id: 'price_1SS4E8K9cHL77TyOtdNpKgCr',
+    price_cents: 399,
+    currency: 'USD',
+    stripe_price_id: 'price_1SXOwLK9cHL77TyOiMOnEBBr',
   },
   // Creator and Pro packages...
 ]
