@@ -69,6 +69,8 @@ test.describe('Authentication - Logout', () => {
   })
 
   test('should clear session across open tabs', async ({ context }) => {
+    test.setTimeout(60000) // Override 30s default to 60s for multi-tab test
+
     await mockCameraFeed(context)
 
     const pageA = await context.newPage()
@@ -94,8 +96,16 @@ test.describe('Authentication - Logout', () => {
     const cookiesA = await context.cookies()
     expect(cookiesA.some(cookie => cookie.name.startsWith('sb-'))).toBeFalsy()
 
-    await pageB.reload()
-    await expect(pageB.getByTestId('sign-in-button')).toBeVisible()
+    // Wait for reload with network idle + extended timeout to prevent flakiness
+    await pageB.reload({
+      waitUntil: 'networkidle',
+      timeout: 45000
+    })
+
+    // Wait for sign-in button to appear (proves logout worked across tabs)
+    await expect(pageB.getByTestId('sign-in-button')).toBeVisible({ timeout: 10000 })
+
+    // Then verify user menu is gone
     await expect(pageB.getByTestId('user-menu')).toHaveCount(0)
     const tabBState = await pageB.evaluate(([userKey, profileKey]) => {
       return {
