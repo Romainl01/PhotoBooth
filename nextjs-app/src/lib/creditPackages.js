@@ -49,8 +49,8 @@ export const DEFAULT_CREDIT_PACKAGES = [
     name: 'Starter',
     emoji: '💫',
     credits: 10,
-    price_cents: 299,
-    currency: 'EUR',
+    price_cents: 399,
+    currency: 'USD',
     stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER,
   },
   {
@@ -58,8 +58,8 @@ export const DEFAULT_CREDIT_PACKAGES = [
     name: 'Creator',
     emoji: '🎨',
     credits: 30,
-    price_cents: 699,
-    currency: 'EUR',
+    price_cents: 899,
+    currency: 'USD',
     stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREATOR,
   },
   {
@@ -67,8 +67,8 @@ export const DEFAULT_CREDIT_PACKAGES = [
     name: 'Pro',
     emoji: '🏆',
     credits: 100,
-    price_cents: 1799,
-    currency: 'EUR',
+    price_cents: 1999,
+    currency: 'USD',
     stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO,
   },
 ]

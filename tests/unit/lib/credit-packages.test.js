@@ -11,7 +11,7 @@ describe('Credit Packages - Configuration', () => {
       const starter = DEFAULT_CREDIT_PACKAGES.find(p => p.name === 'Starter');
       expect(starter).toBeDefined();
       expect(starter.credits).toBe(10);
-      expect(starter.price_cents).toBe(299);
+      expect(starter.price_cents).toBe(399);
       expect(starter.emoji).toBe('💫');
     });
 
@@ -19,7 +19,7 @@ describe('Credit Packages - Configuration', () => {
       const creator = DEFAULT_CREDIT_PACKAGES.find(p => p.name === 'Creator');
       expect(creator).toBeDefined();
       expect(creator.credits).toBe(30);
-      expect(creator.price_cents).toBe(699);
+      expect(creator.price_cents).toBe(899);
       expect(creator.emoji).toBe('🎨');
     });
 
@@ -27,13 +27,13 @@ describe('Credit Packages - Configuration', () => {
       const pro = DEFAULT_CREDIT_PACKAGES.find(p => p.name === 'Pro');
       expect(pro).toBeDefined();
       expect(pro.credits).toBe(100);
-      expect(pro.price_cents).toBe(1799);
+      expect(pro.price_cents).toBe(1999);
       expect(pro.emoji).toBe('🏆');
     });
 
-    it('should use EUR currency for all packages', () => {
+    it('should use USD currency for all packages', () => {
       DEFAULT_CREDIT_PACKAGES.forEach(pkg => {
-        expect(pkg.currency).toBe('EUR');
+        expect(pkg.currency).toBe('USD');
       });
     });
 
@@ -138,22 +138,22 @@ describe('Credit Packages - Configuration', () => {
   });
 
   describe('Package value calculations', () => {
-    it('Starter package should cost 29.9 cents per credit', () => {
+    it('Starter package should cost 39.9 cents per credit', () => {
       const starter = DEFAULT_CREDIT_PACKAGES.find(p => p.name === 'Starter');
       const pricePerCredit = starter.price_cents / starter.credits;
-      expect(pricePerCredit).toBeCloseTo(29.9, 1);
+      expect(pricePerCredit).toBeCloseTo(39.9, 1);
     });
 
-    it('Creator package should cost 23.3 cents per credit', () => {
+    it('Creator package should cost 29.97 cents per credit', () => {
       const creator = DEFAULT_CREDIT_PACKAGES.find(p => p.name === 'Creator');
       const pricePerCredit = creator.price_cents / creator.credits;
-      expect(pricePerCredit).toBeCloseTo(23.3, 1);
+      expect(pricePerCredit).toBeCloseTo(29.97, 1);
     });
 
-    it('Pro package should cost 17.99 cents per credit', () => {
+    it('Pro package should cost 19.99 cents per credit', () => {
       const pro = DEFAULT_CREDIT_PACKAGES.find(p => p.name === 'Pro');
       const pricePerCredit = pro.price_cents / pro.credits;
-      expect(pricePerCredit).toBeCloseTo(17.99, 2);
+      expect(pricePerCredit).toBeCloseTo(19.99, 2);
     });
 
     it('Pro package should offer ~40% better value than Starter', () => {

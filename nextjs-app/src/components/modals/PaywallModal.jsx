@@ -96,8 +96,10 @@ export default function PaywallModal({ onClose }) {
   // Format price for display
   function formatPrice(cents, currency) {
     const amount = (cents / 100).toFixed(2)
-    const symbol = currency === 'EUR' ? '€' : '$'
-    return `${amount}${symbol}`
+    if (currency === 'USD') {
+      return `$${amount}` // American style: $3.99
+    }
+    return `${amount}€` // European style: 3.99€
   }
 
   return (
