@@ -48,11 +48,11 @@ export const metadata = {
   openGraph: {
     title: "Morpheo - AI Photobooth",
     description: "Transform your photos with AI-powered creative filters",
-    url: 'https://morpheo-phi.vercel.app',
+    url: 'https://morpheo.xyz',
     siteName: 'Morpheo',
     images: [
       {
-        url: 'https://morpheo-phi.vercel.app/logo.svg',
+        url: 'https://morpheo.xyz/logo.svg',
         width: 1200,
         height: 630,
         alt: 'Morpheo Logo',
@@ -65,7 +65,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: "Morpheo - AI Photobooth",
     description: "Transform your photos with AI-powered creative filters",
-    images: ['https://morpheo-phi.vercel.app/logo.svg'],
+    images: ['https://morpheo.xyz/logo.svg'],
   },
 };
 

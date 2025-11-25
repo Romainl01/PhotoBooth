@@ -37,7 +37,7 @@ export default function ResultScreen({
         await navigator.share({
           files: [file],
           title: 'Morpheo Photo',
-          text: 'Generate your AI picture on https://morpheo-phi.vercel.app',
+          text: 'Generate your AI picture on https://morpheo.xyz',
         });
 
         // Cleanup blob URL
@@ -70,7 +70,7 @@ export default function ResultScreen({
         await navigator.share({
           files: [file],
           title: 'Morpheo Photo',
-          text: 'Generate your AI picture on https://morpheo-phi.vercel.app',
+          text: 'Generate your AI picture on https://morpheo.xyz',
         });
 
         onDownload?.();

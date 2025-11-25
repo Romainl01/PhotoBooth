@@ -59,7 +59,7 @@ export async function addWatermark(imageUrl) {
       ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
 
       // Watermark text
-      const watermarkText = 'created with Morpheo - morpheo-phi.vercel.app/';
+      const watermarkText = 'created with Morpheo - morpheo.xyz';
 
       // Dynamic font sizing based on image dimensions
       const minFontSize = 80;

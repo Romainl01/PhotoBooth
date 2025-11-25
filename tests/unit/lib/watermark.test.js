@@ -151,7 +151,7 @@ describe('Watermark - Add Branding to Images', () => {
 
       expect(mockContext.fillText).toHaveBeenCalled();
       const fillTextCall = mockContext.fillText.mock.calls[0];
-      expect(fillTextCall[0]).toBe('created with Morpheo - morpheo-phi.vercel.app/');
+      expect(fillTextCall[0]).toBe('created with Morpheo - morpheo.xyz');
     });
 
     it('watermark text should include "Morpheo"', async () => {
@@ -173,7 +173,7 @@ describe('Watermark - Add Branding to Images', () => {
       await watermarkPromise;
 
       const watermarkText = mockContext.fillText.mock.calls[0][0];
-      expect(watermarkText).toContain('morpheo-phi.vercel.app');
+      expect(watermarkText).toContain('morpheo.xyz');
     });
   });
 
