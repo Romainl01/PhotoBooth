@@ -35,7 +35,7 @@ test.describe('Image generation - flows', () => {
     })
 
     await page.goto('/')
-    await expect(page.getByTestId('user-menu')).toBeVisible()
+    await waitForAuthReady(page)
 
     const uploadInput = page.locator('input[type="file"]')
     await uploadInput.setInputFiles(FIXTURE_PATH)
@@ -84,7 +84,7 @@ test.describe('Image generation - flows', () => {
     })
 
     await page.goto('/')
-    await expect(page.getByTestId('user-menu')).toBeVisible()
+    await waitForAuthReady(page)
 
     const uploadInput = page.locator('input[type="file"]')
     await uploadInput.setInputFiles(FIXTURE_PATH)
@@ -113,7 +113,7 @@ test.describe('Image generation - flows', () => {
     })
 
     await page.goto('/')
-    await expect(page.getByTestId('user-menu')).toBeVisible()
+    await waitForAuthReady(page)
 
     await page.getByLabel('Upload photo').click()
 
@@ -170,6 +170,13 @@ async function mockCameraFeed(context) {
       value: patchedDevices,
     })
   })
+}
+
+async function waitForAuthReady(page) {
+  // Wait for CameraScreen to render (user-menu visible)
+  await expect(page.getByTestId('user-menu')).toBeVisible()
+  // Wait for auth context to finish loading (CreditBadge switches from "Loading..." to credit text)
+  await expect(page.getByText('Loading...')).not.toBeVisible()
 }
 
 async function stubCanvasAndShareAPIs(context) {

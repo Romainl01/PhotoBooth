@@ -8,6 +8,10 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 1, // One worker (avoid parallel DB conflicts)
   reporter: 'html',
 
+  expect: {
+    timeout: 10_000, // 10s for assertions involving React state updates + API mocks
+  },
+
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry', // Record traces for debugging failures

@@ -20,26 +20,31 @@ export const useImageGeneration = () => {
         setError(null)
 
         try {
-            // Refresh session before API call
-            const supabase = createClient()
+            // Skip Supabase network calls in E2E test mode
+            const isE2ETestMode = process.env.NEXT_PUBLIC_E2E_DISABLE_AUTH === 'true'
 
-            // Add timeout to prevent hanging indefinitely (10 second timeout)
-            const refreshPromise = supabase.auth.refreshSession()
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Session refresh timeout after 10s')), 10000)
-            )
+            if (!isE2ETestMode) {
+                // Refresh session before API call
+                const supabase = createClient()
 
-            try {
-                const { error: refreshError } = await Promise.race([
-                    refreshPromise,
-                    timeoutPromise
-                ])
+                // Add timeout to prevent hanging indefinitely (10 second timeout)
+                const refreshPromise = supabase.auth.refreshSession()
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Session refresh timeout after 10s')), 10000)
+                )
 
-                if (refreshError) {
-                    console.warn('[Session] Failed to refresh session:', refreshError)
+                try {
+                    const { error: refreshError } = await Promise.race([
+                        refreshPromise,
+                        timeoutPromise
+                    ])
+
+                    if (refreshError) {
+                        console.warn('[Session] Failed to refresh session:', refreshError)
+                    }
+                } catch (timeoutError) {
+                    console.warn('[Session] Refresh timed out, proceeding with API call:', timeoutError.message)
                 }
-            } catch (timeoutError) {
-                console.warn('[Session] Refresh timed out, proceeding with API call:', timeoutError.message)
             }
 
             const response = await fetch('/api/generate-headshot', {

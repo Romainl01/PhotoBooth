@@ -46,15 +46,20 @@ export default function SettingsDrawer({ isOpen, onClose }) {
   const handleLogout = async () => {
     console.log('[SettingsDrawer] Logging out user...')
 
-    try {
-      // Wait for sign out to complete before redirecting
-      // This prevents middleware from seeing stale auth state
-      await supabase.auth.signOut()
-      console.log('[SettingsDrawer] Sign out successful')
-    } catch (err) {
-      // Log error but continue with redirect
-      // Middleware will handle any remaining session cleanup
-      console.error('[SettingsDrawer] Sign out error:', err)
+    // Skip Supabase network calls in E2E test mode
+    const isE2ETestMode = process.env.NEXT_PUBLIC_E2E_DISABLE_AUTH === 'true'
+
+    if (!isE2ETestMode) {
+      try {
+        // Wait for sign out to complete before redirecting
+        // This prevents middleware from seeing stale auth state
+        await supabase.auth.signOut()
+        console.log('[SettingsDrawer] Sign out successful')
+      } catch (err) {
+        // Log error but continue with redirect
+        // Middleware will handle any remaining session cleanup
+        console.error('[SettingsDrawer] Sign out error:', err)
+      }
     }
 
     // Ensure session artifacts are removed even if Supabase is unreachable

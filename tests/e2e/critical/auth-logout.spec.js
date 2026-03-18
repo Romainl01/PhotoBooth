@@ -20,10 +20,10 @@ test.describe('Authentication - Logout', () => {
     await mockSupabaseSession(page, context)
     await page.goto('/')
 
-    const userMenuButton = page.getByTestId('user-menu')
-    await expect(userMenuButton).toBeVisible()
+    await waitForAuthReady(page)
 
     // Open settings drawer and log out
+    const userMenuButton = page.getByTestId('user-menu')
     await userMenuButton.click()
     const logoutButton = page.getByTestId('logout-button')
     await expect(logoutButton).toBeVisible()
@@ -85,8 +85,8 @@ test.describe('Authentication - Logout', () => {
     await pageA.goto('/')
     await pageB.goto('/')
 
-    await expect(pageA.getByTestId('user-menu')).toBeVisible()
-    await expect(pageB.getByTestId('user-menu')).toBeVisible()
+    await waitForAuthReady(pageA)
+    await waitForAuthReady(pageB)
 
     await pageA.getByTestId('user-menu').click()
     await pageA.getByTestId('logout-button').click()
@@ -119,6 +119,13 @@ test.describe('Authentication - Logout', () => {
     await context.close()
   })
 })
+
+async function waitForAuthReady(page) {
+  // Wait for CameraScreen to render (user-menu visible)
+  await expect(page.getByTestId('user-menu')).toBeVisible()
+  // Wait for auth context to finish loading (CreditBadge switches from "Loading..." to credit text)
+  await expect(page.getByText('Loading...')).not.toBeVisible()
+}
 
 async function mockSupabaseSession(page, context) {
   const currentUrl = new URL(page.url())
